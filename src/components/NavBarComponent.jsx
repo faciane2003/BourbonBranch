@@ -1,52 +1,14 @@
-import {
-  Box,
-  Grid,
-  AppBar,
-  Container,
-  Typography,
-  Paper,
-  IconButton,
-  Avatar,
-  Badge,
-  Menu,
-  MenuItem,
-  Divider,
-  ListItemIcon,
-  Tooltip,
-} from "@mui/material";
-import {
-  NotificationsOutlined,
-  Settings,
-  Logout,
-  AccountCircleOutlined,
-} from "@mui/icons-material";
-import { useState } from "react";
+import { AppBar, Box, Button, Container, Grid, Paper, Typography } from "@mui/material";
 
 export default function NavBarComponent() {
-  const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
-  const [anchorEl, setAnchorEl] = useState(null);
-  // handleNotificationClicked
-  const open = Boolean(anchorEl);
-  const notificationOpen = Boolean(notificationAnchorEl);
-  const handleAvatarClicked = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-  const handleNotificationClicked = (event) => {
-    setNotificationAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-  const notificationHandleClose = () => {
-    setNotificationAnchorEl(null);
-  };
-
   return (
     <Grid container>
       <Grid item md={12}>
         <Paper elevation={4}>
-          <AppBar sx={{ padding: 2 }} position="static">
+          <AppBar
+            sx={{ padding: 2, backgroundColor: "rgba(15, 11, 10, 0.95)" }}
+            position="static"
+          >
             <Container maxWidth="xxl">
               <Box
                 sx={{
@@ -55,88 +17,65 @@ export default function NavBarComponent() {
                   alignItems: "center",
                 }}
               >
-                <Typography
-                  variant="h6"
-                  component="a"
-                  href="/"
-                  sx={{
-                    mx: 2,
-                    display: { xs: "none", md: "flex" },
-                    fontWeight: 700,
-                    letterSpacing: ".2rem",
-                    color: "inherit",
-                    textDecoration: "none",
-                  }}
-                >
-                  ADIMS
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Box
+                    component="img"
+                    src="/bourbon-and-branch_files/bourbon_and_branch_logo.png"
+                    alt="Bourbon & Branch"
+                    sx={{ height: 40, display: { xs: "none", md: "block" } }}
+                  />
+                  <Typography
+                    variant="h6"
+                    component="a"
+                    href="/"
+                    sx={{
+                      fontWeight: 700,
+                      letterSpacing: ".2rem",
+                      color: "var(--bb-gold)",
+                      textDecoration: "none",
+                    }}
+                  >
+                    Bourbon & Branch
+                  </Typography>
+                </Box>
 
                 <Box
                   sx={{
                     display: "flex",
                     justifyContent: "right",
                     alignItems: "center",
+                    gap: 2
                   }}
                 >
-                  <IconButton color="inherit">
-                    <Badge variant="dot" color="error" invisible={false}>
-                      <NotificationsOutlined
-                        sx={{ width: 32, height: 32 }}
-                        onClick={handleNotificationClicked}
-                      />
-                    </Badge>
-                  </IconButton>
-                  <Menu
-                    open={notificationOpen}
-                    anchorEl={notificationAnchorEl}
-                    onClick={notificationHandleClose}
-                    onClose={notificationHandleClose}
+                  <Button
+                    href="https://tables.toasttab.com/restaurants/ab5db445-fe5d-42d3-a027-6e9c3964cf4d/findTime"
+                    target="_blank"
+                    rel="noreferrer"
+                    sx={{
+                      color: "var(--bb-ink)",
+                      backgroundColor: "var(--bb-gold)",
+                      "&:hover": { backgroundColor: "var(--bb-copper)" }
+                    }}
                   >
-                    <MenuItem>Notification number 1 </MenuItem>
-                    <Divider />
-                    <MenuItem>Notification number 2</MenuItem>
-                    <MenuItem>Notification number 3</MenuItem>
-                  </Menu>
-                  <IconButton
-                    onClick={handleAvatarClicked}
-                    size="small"
-                    sx={{ mx: 2 }}
-                    aria-haspopup="true"
+                    Reservations
+                  </Button>
+                  <Button
+                    href="https://www.toasttab.com/bourbon-branch-705-n-2nd-st"
+                    target="_blank"
+                    rel="noreferrer"
+                    variant="outlined"
+                    sx={{
+                      color: "var(--bb-gold)",
+                      borderColor: "var(--bb-gold)",
+                      "&:hover": {
+                        borderColor: "var(--bb-copper)",
+                        color: "var(--bb-copper)"
+                      }
+                    }}
                   >
-                    <Tooltip title="account settings">
-                      <Avatar sx={{ width: 32, height: 32 }}>Z</Avatar>
-                    </Tooltip>
-                  </IconButton>
-                  <Typography fontFamily={"Inter"}>ADMI ZAKARYAE</Typography>
+                    Takeout & Delivery
+                  </Button>
                 </Box>
-
-                <Menu
-                  open={open}
-                  anchorEl={anchorEl}
-                  onClick={handleClose}
-                  onClose={handleClose}
-                >
-                  <MenuItem>
-                    <ListItemIcon>
-                      <AccountCircleOutlined fontSize="small" />
-                    </ListItemIcon>
-                    Profile
-                  </MenuItem>
-                  <Divider />
-
-                  <MenuItem>
-                    <ListItemIcon>
-                      <Settings fontSize="small" />
-                    </ListItemIcon>
-                    Settings
-                  </MenuItem>
-                  <MenuItem>
-                    <ListItemIcon>
-                      <Logout fontSize="small" />
-                    </ListItemIcon>
-                    Logout
-                  </MenuItem>
-                </Menu>
               </Box>
             </Container>
           </AppBar>

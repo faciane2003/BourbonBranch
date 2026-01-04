@@ -1,3 +1,14 @@
-.bod{
-    background-color:#DEE3E9;
+:root {
+  --bb-ink: #171312;
+  --bb-espresso: #221a17;
+  --bb-night: #0f0b0a;
+  --bb-gold: #e6d199;
+  --bb-sand: #f5e6d2;
+  --bb-copper: #c98f5a;
+}
+
+.bod {
+  background: radial-gradient(circle at top, #2b201c 0%, var(--bb-night) 45%);
+  color: var(--bb-sand);
+  min-height: 100vh;
 }

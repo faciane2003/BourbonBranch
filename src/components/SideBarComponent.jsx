@@ -1,4 +1,3 @@
-import { useState } from "react";
 import "../../public/styles/links.css";
 import {
   List,
@@ -11,13 +10,12 @@ import {
 } from "@mui/material";
 import {
   HomeOutlined,
-  Inventory2Outlined,
-  SettingsOutlined,
-  DescriptionOutlined,
-  MonetizationOnOutlined,
-  CardTravelOutlined,
-  TrendingUpOutlined,
-  PeopleAltOutlined,
+  RestaurantMenuOutlined,
+  EventOutlined,
+  LocalOfferOutlined,
+  CalendarMonthOutlined,
+  DeliveryDiningOutlined,
+  CallOutlined,
 } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -37,40 +35,45 @@ export default function SideBarComponent() {
     {
       title: "Home",
       component: <HomeOutlined fontSize="medium" color="primary" />,
+      path: "/",
     },
     {
-      title: "Inventory",
-      component: <Inventory2Outlined fontSize="medium" color="primary" />,
+      title: "Menus",
+      component: <RestaurantMenuOutlined fontSize="medium" color="primary" />,
+      path: "/menus",
     },
     {
-      title: "Orders",
-      component: <CardTravelOutlined fontSize="medium" color="primary" />,
+      title: "Events",
+      component: <EventOutlined fontSize="medium" color="primary" />,
+      path: "/events",
     },
     {
-      title: "Customers",
-      component: <PeopleAltOutlined fontSize="medium" color="primary" />,
+      title: "Specials",
+      component: <LocalOfferOutlined fontSize="medium" color="primary" />,
+      path: "/specials",
     },
     {
-      title: "Revenue",
-      component: <MonetizationOnOutlined fontSize="medium" color="primary" />,
+      title: "Reservations",
+      component: <CalendarMonthOutlined fontSize="medium" color="primary" />,
+      path:
+        "https://tables.toasttab.com/restaurants/ab5db445-fe5d-42d3-a027-6e9c3964cf4d/findTime",
+      external: true,
     },
     {
-      title: "Growth",
-      component: <TrendingUpOutlined fontSize="medium" color="primary" />,
+      title: "Takeout",
+      component: <DeliveryDiningOutlined fontSize="medium" color="primary" />,
+      path: "https://www.toasttab.com/bourbon-branch-705-n-2nd-st",
+      external: true,
     },
     {
-      title: "Reports",
-      component: <DescriptionOutlined fontSize="medium" color="primary" />,
-    },
-    {
-      title: "Settings",
-      component: <SettingsOutlined fontSize="medium" color="primary" />,
+      title: "Contact",
+      component: <CallOutlined fontSize="medium" color="primary" />,
+      path: "/contact",
     },
   ];
-  const [selected, setSelected] = useState(0);
-  const handlSelectedComponent = (index) => {
-    setSelected(index);
-  };
+  const activeIndex = sideBarComponent.findIndex(
+    (item) => !item.external && item.path === currentPage
+  );
   return (
     <>
       <List>
@@ -79,13 +82,15 @@ export default function SideBarComponent() {
             <Box width="100%">
               <ListItemButton
                 onClick={() => {
-                  handlSelectedComponent(index);
-                  navigateTo(comp.title.toLocaleLowerCase());
+                  if (comp.external) {
+                    window.open(comp.path, "_blank", "noreferrer");
+                    return;
+                  }
+                  navigateTo(comp.path);
                 }}
                 // selected={}
                 selected={
-                  index === selected &&
-                  currentPage === "/" + comp.title.toLowerCase()
+                  index === activeIndex && currentPage === comp.path
                 }
                 sx={{
                   mb: 3,
@@ -105,8 +110,8 @@ export default function SideBarComponent() {
                   primary={comp.title}
                   primaryTypographyProps={{
                     fontSize: "medium",
-                    fontWeight: selected === index ? "bold" : "",
-                    color: selected === index ? "primary.main" : "inherit",
+                    fontWeight: activeIndex === index ? "bold" : "",
+                    color: activeIndex === index ? "primary.main" : "inherit",
                   }}
                 />
                 {/* </Link> */}
