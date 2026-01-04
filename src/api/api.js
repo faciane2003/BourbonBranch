@@ -20,3 +20,63 @@ export function fetchCustomers() {
 export function fetchOrders() {
   return request("/api/orders");
 }
+
+export function createProduct(payload) {
+  return request("/api/products", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateProduct(id, payload) {
+  return request(`/api/products/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+}
+
+export function deleteProduct(id) {
+  return request(`/api/products/${id}`, { method: "DELETE" });
+}
+
+export function createCustomer(payload) {
+  return request("/api/customers", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateCustomer(id, payload) {
+  return request(`/api/customers/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+}
+
+export function deleteCustomer(id) {
+  return request(`/api/customers/${id}`, { method: "DELETE" });
+}
+
+export function createOrder(payload) {
+  return request("/api/orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateOrder(id, payload) {
+  return request(`/api/orders/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+}
+
+export function deleteOrder(id) {
+  return request(`/api/orders/${id}`, { method: "DELETE" });
+}

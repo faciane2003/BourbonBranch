@@ -98,6 +98,16 @@ async function seed(pool) {
   } finally {
     client.release();
   }
+
+  await pool.query(
+    "SELECT setval('products_id_seq', (SELECT COALESCE(MAX(id), 1) FROM products))"
+  );
+  await pool.query(
+    "SELECT setval('customers_id_seq', (SELECT COALESCE(MAX(id), 1) FROM customers))"
+  );
+  await pool.query(
+    "SELECT setval('orders_id_seq', (SELECT COALESCE(MAX(id), 1) FROM orders))"
+  );
 }
 
 async function initDb(pool) {

@@ -1,7 +1,12 @@
 import { Component } from "react";
-import { Avatar, Box, Typography } from "@mui/material";
+import { Avatar, Box, Button, Typography } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import { fetchCustomers } from "../../../api/api";
+import {
+  createCustomer,
+  deleteCustomer,
+  fetchCustomers,
+  updateCustomer
+} from "../../../api/api";
 export default class CustomerList extends Component {
   constructor(props) {
     super(props);
@@ -12,6 +17,11 @@ export default class CustomerList extends Component {
   }
 
   componentDidMount() {
+    this.loadCustomers();
+  }
+
+  loadCustomers = () => {
+    this.setState({ loading: true });
     fetchCustomers()
       .then((rows) => {
         this.setState({ rows });
@@ -22,7 +32,61 @@ export default class CustomerList extends Component {
       .finally(() => {
         this.setState({ loading: false });
       });
-  }
+  };
+
+  handleAddCustomer = async () => {
+    const firstName = window.prompt("First name:");
+    if (!firstName) {
+      return;
+    }
+    const lastName = window.prompt("Last name:") || "";
+    const position = window.prompt("Position:", "Customer") || "Customer";
+    const mobile = window.prompt("Mobile:", "") || "";
+    try {
+      await createCustomer({ firstName, lastName, position, mobile });
+      this.loadCustomers();
+    } catch (error) {
+      console.error("Failed to add customer:", error);
+      window.alert("Failed to add customer.");
+    }
+  };
+
+  handleEditCustomer = async (customer) => {
+    const firstName =
+      window.prompt("First name:", customer.firstName) || customer.firstName;
+    const lastName =
+      window.prompt("Last name:", customer.lastName) || customer.lastName;
+    const position =
+      window.prompt("Position:", customer.position) || customer.position;
+    const mobile = window.prompt("Mobile:", customer.mobile) || customer.mobile;
+    try {
+      await updateCustomer(customer.id, {
+        firstName,
+        lastName,
+        position,
+        mobile
+      });
+      this.loadCustomers();
+    } catch (error) {
+      console.error("Failed to update customer:", error);
+      window.alert("Failed to update customer.");
+    }
+  };
+
+  handleDeleteCustomer = async (customer) => {
+    if (!window.confirm(`Delete ${customer.firstName} ${customer.lastName}?`)) {
+      return;
+    }
+    try {
+      await deleteCustomer(customer.id);
+      this.loadCustomers();
+    } catch (error) {
+      console.error("Failed to delete customer:", error);
+      window.alert(
+        "Failed to delete customer. They may have existing orders."
+      );
+    }
+  };
 
   render() {
     const columns = [
@@ -87,6 +151,31 @@ export default class CustomerList extends Component {
         width: 300,
         description: "total amount of the order",
       },
+      {
+        field: "actions",
+        headerName: "Actions",
+        width: 220,
+        sortable: false,
+        renderCell: (params) => (
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => this.handleEditCustomer(params.row)}
+            >
+              Edit
+            </Button>
+            <Button
+              size="small"
+              color="error"
+              variant="outlined"
+              onClick={() => this.handleDeleteCustomer(params.row)}
+            >
+              Delete
+            </Button>
+          </Box>
+        )
+      }
     ];
     return (
       <Box
@@ -98,6 +187,11 @@ export default class CustomerList extends Component {
           height: "100%",
         }}
       >
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+          <Button variant="contained" onClick={this.handleAddCustomer}>
+            Add Customer
+          </Button>
+        </Box>
         <DataGrid
           sx={{
             borderLeft: 0,

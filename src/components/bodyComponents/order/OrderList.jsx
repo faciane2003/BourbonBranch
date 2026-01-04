@@ -2,7 +2,7 @@ import { Avatar, Box, Button, Modal, Typography } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { Component } from "react";
 import OrderModal from "./OrderModal";
-import { fetchOrders } from "../../../api/api";
+import { createOrder, deleteOrder, fetchOrders, updateOrder } from "../../../api/api";
 export default class OrderList extends Component {
   handlOrderDetail = (order) => {
     this.setState({ order: order, open: true });
@@ -21,6 +21,11 @@ export default class OrderList extends Component {
   }
 
   componentDidMount() {
+    this.loadOrders();
+  }
+
+  loadOrders = () => {
+    this.setState({ loading: true });
     fetchOrders()
       .then((rows) => {
         this.setState({ rows });
@@ -31,7 +36,83 @@ export default class OrderList extends Component {
       .finally(() => {
         this.setState({ loading: false });
       });
-  }
+  };
+
+  parseItemsInput = (itemsInput) => {
+    const items = itemsInput
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+      .map((entry) => {
+        const [productIdRaw, quantityRaw] = entry.split(":");
+        const productId = Number(productIdRaw);
+        const quantity = Number(quantityRaw);
+        return { productId, quantity };
+      })
+      .filter((item) => !Number.isNaN(item.productId) && !Number.isNaN(item.quantity));
+    return items;
+  };
+
+  handleAddOrder = async () => {
+    const customerIdInput = window.prompt("Customer ID:");
+    const itemsInput = window.prompt(
+      "Items (productId:quantity, comma separated):",
+      "1:1,2:3"
+    );
+    const customerId = Number(customerIdInput);
+    const items = this.parseItemsInput(itemsInput || "");
+    if (Number.isNaN(customerId) || items.length === 0) {
+      window.alert("Invalid customer ID or items.");
+      return;
+    }
+    try {
+      await createOrder({ customerId, items });
+      this.loadOrders();
+    } catch (error) {
+      console.error("Failed to add order:", error);
+      window.alert("Failed to add order.");
+    }
+  };
+
+  handleEditOrder = async (order) => {
+    const customerIdInput = window.prompt(
+      "Customer ID:",
+      String(order.customer?.id || "")
+    );
+    const existingItems = (order.products || [])
+      .map((item) => `${item.product.id}:${item.quantity}`)
+      .join(",");
+    const itemsInput = window.prompt(
+      "Items (productId:quantity, comma separated):",
+      existingItems
+    );
+    const customerId = Number(customerIdInput);
+    const items = this.parseItemsInput(itemsInput || "");
+    if (Number.isNaN(customerId) || items.length === 0) {
+      window.alert("Invalid customer ID or items.");
+      return;
+    }
+    try {
+      await updateOrder(order.id, { customerId, items });
+      this.loadOrders();
+    } catch (error) {
+      console.error("Failed to update order:", error);
+      window.alert("Failed to update order.");
+    }
+  };
+
+  handleDeleteOrder = async (order) => {
+    if (!window.confirm(`Delete order #${order.id}?`)) {
+      return;
+    }
+    try {
+      await deleteOrder(order.id);
+      this.loadOrders();
+    } catch (error) {
+      console.error("Failed to delete order:", error);
+      window.alert("Failed to delete order.");
+    }
+  };
   render() {
     const columns = [
       {
@@ -72,10 +153,17 @@ export default class OrderList extends Component {
         headerName: "Total Amount",
         width: 300,
         description: "total amount of the order",
-        valueGetter: () => {
-          const total = 300;
-          return total;
-        },
+        valueGetter: (params) => {
+          const products = params.row.products || [];
+          const total = products.reduce(
+            (sum, item) =>
+              sum +
+              item.quantity *
+                Number(item.product?.price ?? 0),
+            0
+          );
+          return `$${total}`;
+        }
       },
       {
         field: "details",
@@ -96,6 +184,31 @@ export default class OrderList extends Component {
           );
         },
       },
+      {
+        field: "actions",
+        headerName: "Actions",
+        width: 240,
+        sortable: false,
+        renderCell: (params) => (
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => this.handleEditOrder(params.row)}
+            >
+              Edit
+            </Button>
+            <Button
+              size="small"
+              color="error"
+              variant="outlined"
+              onClick={() => this.handleDeleteOrder(params.row)}
+            >
+              Delete
+            </Button>
+          </Box>
+        )
+      }
     ];
 
     return (
@@ -108,6 +221,11 @@ export default class OrderList extends Component {
           height: "100%",
         }}
       >
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+          <Button variant="contained" onClick={this.handleAddOrder}>
+            Add Order
+          </Button>
+        </Box>
         <DataGrid
           sx={{
             borderLeft: 0,

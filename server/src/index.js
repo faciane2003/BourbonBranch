@@ -117,6 +117,269 @@ app.get("/api/orders", async (req, res) => {
   }
 });
 
+app.post("/api/products", async (req, res) => {
+  const { name, category, price, stock } = req.body || {};
+  if (!name || !category || price === undefined || stock === undefined) {
+    return res.status(400).json({ error: "Missing product fields" });
+  }
+  try {
+    const result = await pool.query(
+      `
+        INSERT INTO products (name, category, price, stock)
+        VALUES ($1, $2, $3, $4)
+        RETURNING *
+      `,
+      [name, category, price, stock]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error("Failed to create product:", error);
+    res.status(500).json({ error: "Failed to create product" });
+  }
+});
+
+app.put("/api/products/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, category, price, stock } = req.body || {};
+  if (!name || !category || price === undefined || stock === undefined) {
+    return res.status(400).json({ error: "Missing product fields" });
+  }
+  try {
+    const result = await pool.query(
+      `
+        UPDATE products
+        SET name = $1, category = $2, price = $3, stock = $4
+        WHERE id = $5
+        RETURNING *
+      `,
+      [name, category, price, stock, id]
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Failed to update product:", error);
+    res.status(500).json({ error: "Failed to update product" });
+  }
+});
+
+app.delete("/api/products/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const usage = await pool.query(
+      "SELECT 1 FROM order_items WHERE product_id = $1 LIMIT 1",
+      [id]
+    );
+    if (usage.rowCount > 0) {
+      return res
+        .status(409)
+        .json({ error: "Product is used by existing orders" });
+    }
+    const result = await pool.query(
+      "DELETE FROM products WHERE id = $1 RETURNING id",
+      [id]
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("Failed to delete product:", error);
+    res.status(500).json({ error: "Failed to delete product" });
+  }
+});
+
+app.post("/api/customers", async (req, res) => {
+  const { firstName, lastName, position, mobile } = req.body || {};
+  if (!firstName) {
+    return res.status(400).json({ error: "Missing customer first name" });
+  }
+  try {
+    const result = await pool.query(
+      `
+        INSERT INTO customers (first_name, last_name, position, mobile)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id,
+                  first_name AS "firstName",
+                  last_name AS "lastName",
+                  position,
+                  mobile
+      `,
+      [firstName, lastName || "", position || "", mobile || ""]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error("Failed to create customer:", error);
+    res.status(500).json({ error: "Failed to create customer" });
+  }
+});
+
+app.put("/api/customers/:id", async (req, res) => {
+  const { id } = req.params;
+  const { firstName, lastName, position, mobile } = req.body || {};
+  if (!firstName) {
+    return res.status(400).json({ error: "Missing customer first name" });
+  }
+  try {
+    const result = await pool.query(
+      `
+        UPDATE customers
+        SET first_name = $1,
+            last_name = $2,
+            position = $3,
+            mobile = $4
+        WHERE id = $5
+        RETURNING id,
+                  first_name AS "firstName",
+                  last_name AS "lastName",
+                  position,
+                  mobile
+      `,
+      [firstName, lastName || "", position || "", mobile || "", id]
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Customer not found" });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Failed to update customer:", error);
+    res.status(500).json({ error: "Failed to update customer" });
+  }
+});
+
+app.delete("/api/customers/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const usage = await pool.query(
+      "SELECT 1 FROM orders WHERE customer_id = $1 LIMIT 1",
+      [id]
+    );
+    if (usage.rowCount > 0) {
+      return res
+        .status(409)
+        .json({ error: "Customer has existing orders" });
+    }
+    const result = await pool.query(
+      "DELETE FROM customers WHERE id = $1 RETURNING id",
+      [id]
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Customer not found" });
+    }
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("Failed to delete customer:", error);
+    res.status(500).json({ error: "Failed to delete customer" });
+  }
+});
+
+app.post("/api/orders", async (req, res) => {
+  const { customerId, items } = req.body || {};
+  if (!customerId || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: "Missing order fields" });
+  }
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const customer = await client.query(
+      "SELECT id FROM customers WHERE id = $1",
+      [customerId]
+    );
+    if (customer.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Customer not found" });
+    }
+
+    const orderResult = await client.query(
+      "INSERT INTO orders (customer_id) VALUES ($1) RETURNING id",
+      [customerId]
+    );
+    const orderId = orderResult.rows[0].id;
+
+    for (const item of items) {
+      await client.query(
+        `
+          INSERT INTO order_items (order_id, product_id, quantity)
+          VALUES ($1, $2, $3)
+        `,
+        [orderId, item.productId, item.quantity]
+      );
+    }
+
+    await client.query("COMMIT");
+    res.status(201).json({ id: orderId });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Failed to create order:", error);
+    res.status(500).json({ error: "Failed to create order" });
+  } finally {
+    client.release();
+  }
+});
+
+app.put("/api/orders/:id", async (req, res) => {
+  const { id } = req.params;
+  const { customerId, items } = req.body || {};
+  if (!customerId || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: "Missing order fields" });
+  }
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const order = await client.query("SELECT id FROM orders WHERE id = $1", [
+      id
+    ]);
+    if (order.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    await client.query(
+      "UPDATE orders SET customer_id = $1 WHERE id = $2",
+      [customerId, id]
+    );
+    await client.query("DELETE FROM order_items WHERE order_id = $1", [id]);
+    for (const item of items) {
+      await client.query(
+        `
+          INSERT INTO order_items (order_id, product_id, quantity)
+          VALUES ($1, $2, $3)
+        `,
+        [id, item.productId, item.quantity]
+      );
+    }
+
+    await client.query("COMMIT");
+    res.json({ ok: true });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Failed to update order:", error);
+    res.status(500).json({ error: "Failed to update order" });
+  } finally {
+    client.release();
+  }
+});
+
+app.delete("/api/orders/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      "DELETE FROM orders WHERE id = $1 RETURNING id",
+      [id]
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("Failed to delete order:", error);
+    res.status(500).json({ error: "Failed to delete order" });
+  }
+});
+
 const port = process.env.PORT || 5171;
 initDb(pool)
   .then(() => {
