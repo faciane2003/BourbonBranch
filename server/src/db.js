@@ -99,20 +99,39 @@ async function seed(pool) {
     client.release();
   }
 
+}
+
+async function syncSequences(pool) {
   await pool.query(
-    "SELECT setval('products_id_seq', (SELECT COALESCE(MAX(id), 1) FROM products))"
+    `
+      SELECT setval(
+        pg_get_serial_sequence('products', 'id'),
+        (SELECT COALESCE(MAX(id), 1) FROM products)
+      )
+    `
   );
   await pool.query(
-    "SELECT setval('customers_id_seq', (SELECT COALESCE(MAX(id), 1) FROM customers))"
+    `
+      SELECT setval(
+        pg_get_serial_sequence('customers', 'id'),
+        (SELECT COALESCE(MAX(id), 1) FROM customers)
+      )
+    `
   );
   await pool.query(
-    "SELECT setval('orders_id_seq', (SELECT COALESCE(MAX(id), 1) FROM orders))"
+    `
+      SELECT setval(
+        pg_get_serial_sequence('orders', 'id'),
+        (SELECT COALESCE(MAX(id), 1) FROM orders)
+      )
+    `
   );
 }
 
 async function initDb(pool) {
   await migrate(pool);
   await seed(pool);
+  await syncSequences(pool);
 }
 
 module.exports = { initDb };
