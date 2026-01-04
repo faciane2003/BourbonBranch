@@ -43,39 +43,9 @@ export default function NavBarComponent() {
                   sx={{
                     display: "flex",
                     justifyContent: "right",
-                    alignItems: "center",
-                    gap: 2
+                    alignItems: "center"
                   }}
-                >
-                  <Button
-                    href="https://tables.toasttab.com/restaurants/ab5db445-fe5d-42d3-a027-6e9c3964cf4d/findTime"
-                    target="_blank"
-                    rel="noreferrer"
-                    sx={{
-                      color: "var(--bb-ink)",
-                      backgroundColor: "var(--bb-gold)",
-                      "&:hover": { backgroundColor: "var(--bb-copper)" }
-                    }}
-                  >
-                    Reservations
-                  </Button>
-                  <Button
-                    href="https://www.toasttab.com/bourbon-branch-705-n-2nd-st"
-                    target="_blank"
-                    rel="noreferrer"
-                    variant="outlined"
-                    sx={{
-                      color: "var(--bb-gold)",
-                      borderColor: "var(--bb-gold)",
-                      "&:hover": {
-                        borderColor: "var(--bb-copper)",
-                        color: "var(--bb-copper)"
-                      }
-                    }}
-                  >
-                    Takeout & Delivery
-                  </Button>
-                </Box>
+                />
               </Box>
             </Container>
           </AppBar>
