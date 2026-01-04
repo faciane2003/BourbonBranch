@@ -16,7 +16,8 @@ export default class OrderList extends Component {
       order: {},
       open: false,
       rows: [],
-      loading: true
+      loading: true,
+      error: ""
     };
   }
 
@@ -32,6 +33,9 @@ export default class OrderList extends Component {
       })
       .catch((error) => {
         console.error("Failed to load orders:", error);
+        this.setState({
+          error: "Unable to load orders. Check the API service."
+        });
       })
       .finally(() => {
         this.setState({ loading: false });
@@ -215,10 +219,11 @@ export default class OrderList extends Component {
       <Box
         sx={{
           margin: 3,
-          bgcolor: "white",
+          bgcolor: "background.paper",
           borderRadius: 2,
           padding: 3,
           height: "100%",
+          color: "var(--bb-sand)",
         }}
       >
         <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
@@ -226,6 +231,11 @@ export default class OrderList extends Component {
             Add Order
           </Button>
         </Box>
+        {this.state.error && (
+          <Box sx={{ mb: 2, color: "var(--bb-copper)" }}>
+            {this.state.error}
+          </Box>
+        )}
         <DataGrid
           sx={{
             borderLeft: 0,

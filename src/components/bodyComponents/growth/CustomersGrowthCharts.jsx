@@ -71,10 +71,11 @@ export default function CustomersGrowthCharts() {
     <Box
       sx={{
         margin: 4,
-        bgcolor: "white",
+        bgcolor: "background.paper",
         borderRadius: 2,
         padding: 3,
         height: "95%",
+        color: "var(--bb-sand)",
       }}
     >
       <ApexCharts

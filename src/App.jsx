@@ -60,6 +60,33 @@ function App() {
           }
         `,
       },
+      MuiDataGrid: {
+        styleOverrides: {
+          root: {
+            borderColor: "rgba(230, 209, 153, 0.2)",
+            color: "var(--bb-sand)",
+            backgroundColor: "rgba(21, 16, 14, 0.9)",
+          },
+          columnHeaders: {
+            backgroundColor: "rgba(15, 11, 10, 0.95)",
+            color: "var(--bb-gold)",
+            borderBottom: "1px solid rgba(230, 209, 153, 0.2)",
+          },
+          cell: {
+            borderBottom: "1px solid rgba(230, 209, 153, 0.12)",
+          },
+          footerContainer: {
+            borderTop: "1px solid rgba(230, 209, 153, 0.2)",
+            backgroundColor: "rgba(15, 11, 10, 0.95)",
+            color: "var(--bb-sand)",
+          },
+          row: {
+            "&:hover": {
+              backgroundColor: "rgba(230, 209, 153, 0.08)",
+            },
+          },
+        },
+      },
     },
     //here we customize our typographi and in the variant prop we can use out myVar value
   });

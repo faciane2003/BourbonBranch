@@ -15,10 +15,11 @@ export default class Inventory extends Component {
             <Box
               sx={{
                 margin: 3,
-                bgcolor: "white",
+                bgcolor: "background.paper",
                 borderRadius: 2,
                 padding: 3,
                 height: "100%",
+                color: "var(--bb-sand)",
               }}
             >
               <Typography variant="h5" sx={{ m: 3, fontWeight: "bold" }}>
@@ -31,10 +32,11 @@ export default class Inventory extends Component {
             <Box
               sx={{
                 margin: 3,
-                bgcolor: "white",
+                bgcolor: "background.paper",
                 borderRadius: 2,
                 padding: 3,
                 height: "100%",
+                color: "var(--bb-sand)",
               }}
             >
               <Typography variant="h5" sx={{ m: 3, fontWeight: "bold" }}>

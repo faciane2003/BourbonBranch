@@ -6,7 +6,17 @@ export default function RevenueCard(props) {
     props.card;
 
   return (
-    <Paper elevation={3} sx={{ py: 5, px: 4, borderRadius: 2 }}>
+    <Paper
+      elevation={3}
+      sx={{
+        py: 5,
+        px: 4,
+        borderRadius: 2,
+        bgcolor: "background.paper",
+        color: "var(--bb-sand)",
+        border: "1px solid rgba(230, 209, 153, 0.2)"
+      }}
+    >
       <Box sx={{ display: "flex", flexDirection: "column" }}>
         <Box sx={{ display: "flex", justifyContent: "space-between" }}>
           <Box>

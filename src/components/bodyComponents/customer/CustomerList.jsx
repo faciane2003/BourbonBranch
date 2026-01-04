@@ -12,7 +12,8 @@ export default class CustomerList extends Component {
     super(props);
     this.state = {
       rows: [],
-      loading: true
+      loading: true,
+      error: ""
     };
   }
 
@@ -28,6 +29,9 @@ export default class CustomerList extends Component {
       })
       .catch((error) => {
         console.error("Failed to load customers:", error);
+        this.setState({
+          error: "Unable to load customers. Check the API service."
+        });
       })
       .finally(() => {
         this.setState({ loading: false });
@@ -181,10 +185,11 @@ export default class CustomerList extends Component {
       <Box
         sx={{
           margin: 3,
-          bgcolor: "white",
+          bgcolor: "background.paper",
           borderRadius: 2,
           padding: 3,
           height: "100%",
+          color: "var(--bb-sand)",
         }}
       >
         <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
@@ -192,6 +197,11 @@ export default class CustomerList extends Component {
             Add Customer
           </Button>
         </Box>
+        {this.state.error && (
+          <Box sx={{ mb: 2, color: "var(--bb-copper)" }}>
+            {this.state.error}
+          </Box>
+        )}
         <DataGrid
           sx={{
             borderLeft: 0,

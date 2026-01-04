@@ -11,6 +11,7 @@ import {
 export default function Products() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const loadProducts = () => {
     let isMounted = true;
@@ -22,6 +23,9 @@ export default function Products() {
       })
       .catch((error) => {
         console.error("Failed to load products:", error);
+        if (isMounted) {
+          setError("Unable to load inventory. Check the API service.");
+        }
       })
       .finally(() => {
         if (isMounted) {
@@ -167,6 +171,9 @@ export default function Products() {
           Add Product
         </Button>
       </Box>
+      {error && (
+        <Box sx={{ mb: 2, color: "var(--bb-copper)" }}>{error}</Box>
+      )}
       <DataGrid
         sx={{ borderLeft: 0, borderRight: 0, borderRadius: 0 }}
         rows={rows}

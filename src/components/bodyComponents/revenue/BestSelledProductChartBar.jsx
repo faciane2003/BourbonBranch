@@ -65,10 +65,11 @@ export default function BestSelledProductChartBar() {
     <Box
       sx={{
         marginX: 4,
-        bgcolor: "white",
+        bgcolor: "background.paper",
         borderRadius: 2,
         padding: 3,
         height: "95%",
+        color: "var(--bb-sand)",
       }}
     >
       <ApexCharts

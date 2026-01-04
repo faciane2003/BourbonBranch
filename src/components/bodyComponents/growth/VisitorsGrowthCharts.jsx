@@ -67,10 +67,11 @@ export default function VisitorsGrowthCharts() {
     <Box
       sx={{
         marginX: 4,
-        bgcolor: "white",
+        bgcolor: "background.paper",
         borderRadius: 2,
         padding: 3,
         height: "100%",
+        color: "var(--bb-sand)",
       }}
     >
       <ApexCharts

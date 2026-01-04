@@ -53,11 +53,12 @@ export default function OrderModal({ order }) {
         top: "50%",
         transform: "translate(-50%, -50%)",
         width: "50%",
-        bgcolor: "white",
+        bgcolor: "background.paper",
 
         borderRadius: 2,
         boxShadow: 24,
         p: 4,
+        color: "var(--bb-sand)",
       }}
     >
       <Box sx={{ color: "black", display: "flex", flexDirection: "column" }}>
