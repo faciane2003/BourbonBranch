@@ -132,6 +132,14 @@ async function initDb(pool) {
   await migrate(pool);
   await seed(pool);
   await syncSequences(pool);
+  await pool.query(
+    `
+      UPDATE customers
+      SET first_name = 'Justin',
+          last_name = 'Faciane'
+      WHERE first_name = 'ADMI' AND last_name = 'ZAKARYAE'
+    `
+  );
 }
 
 module.exports = { initDb };
