@@ -12,8 +12,9 @@ services:
           name: bourbon-branch-db
           property: connectionString
 
-  - type: static_site
+  - type: web
     name: bourbon-branch-web
+    env: static
     rootDir: .
     buildCommand: npm install && npm run build
     staticPublishPath: dist
