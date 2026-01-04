@@ -23,8 +23,8 @@ const seedProducts = [
 
 const seedCustomers = Array.from({ length: 20 }, (_, index) => ({
   id: index + 1,
-  firstName: "ADMI",
-  lastName: "ZAKARYAE",
+  firstName: "Justin",
+  lastName: "Faciane",
   position: "Software Engineer",
   mobile: "+212 6 51 88 61 51"
 }));

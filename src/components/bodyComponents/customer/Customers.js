@@ -1,8 +1,8 @@
 import productList from "../inventory/productList";
 
 const customers = [{
-    id:1,firstName: "ADMI",
-    lastName: "ZAKARYAE",
+    id:1,firstName: "Justin",
+    lastName: "Faciane",
     position: "Software Engineer",
     mobile: "+212 6 51 88 61 51",
     orders:[{
@@ -10,8 +10,8 @@ const customers = [{
         products: [{quantity:5,product:productList[0]}, {quantity:5,product:productList[1]},{quantity:5,product: productList[2]}],}
     ]
 },{
-    id:2,firstName: "ADMI",
-    lastName: "ZAKARYAE",
+    id:2,firstName: "Justin",
+    lastName: "Faciane",
     position: "Software Engineer",
     mobile: "+212 6 51 88 61 51",
     orders:[{
@@ -20,8 +20,8 @@ const customers = [{
     ]
 }
 ,{
-    id:3,firstName: "ADMI",
-    lastName: "ZAKARYAE",
+    id:3,firstName: "Justin",
+    lastName: "Faciane",
     position: "Software Engineer",
     mobile: "+212 6 51 88 61 51",
     orders:[{
@@ -29,8 +29,8 @@ const customers = [{
         products: [{quantity:5,product:productList[0]}, {quantity:5,product:productList[1]},{quantity:5,product: productList[2]}],}
     ]
 },{
-    id:4,firstName: "ADMI",
-    lastName: "ZAKARYAE",
+    id:4,firstName: "Justin",
+    lastName: "Faciane",
     position: "Software Engineer",
     mobile: "+212 6 51 88 61 51",
     orders:[{
@@ -38,8 +38,8 @@ const customers = [{
         products: [{quantity:5,product:productList[0]}, {quantity:5,product:productList[1]},{quantity:5,product: productList[2]}],}
     ]
 },{
-    id:5,firstName: "ADMI",
-    lastName: "ZAKARYAE",
+    id:5,firstName: "Justin",
+    lastName: "Faciane",
     position: "Software Engineer",
     mobile: "+212 6 51 88 61 51",
     orders:[{
@@ -48,8 +48,8 @@ const customers = [{
     ]
 }
 ,{
-    id:6,firstName: "ADMI",
-    lastName: "ZAKARYAE",
+    id:6,firstName: "Justin",
+    lastName: "Faciane",
     position: "Software Engineer",
     mobile: "+212 6 51 88 61 51",
     orders:[{
@@ -57,8 +57,8 @@ const customers = [{
         products: [{quantity:5,product:productList[0]}, {quantity:5,product:productList[1]},{quantity:5,product: productList[2]}],}
     ]
 },{
-    id:7,firstName: "ADMI",
-    lastName: "ZAKARYAE",
+    id:7,firstName: "Justin",
+    lastName: "Faciane",
     position: "Software Engineer",
     mobile: "+212 6 51 88 61 51",
     orders:[{
@@ -66,8 +66,8 @@ const customers = [{
         products: [{quantity:5,product:productList[0]}, {quantity:5,product:productList[1]},{quantity:5,product: productList[2]}],}
     ]
 },{
-    id:8,firstName: "ADMI",
-    lastName: "ZAKARYAE",
+    id:8,firstName: "Justin",
+    lastName: "Faciane",
     position: "Software Engineer",
     mobile: "+212 6 51 88 61 51",
     orders:[{
@@ -76,8 +76,8 @@ const customers = [{
     ]
 }
 ,{
-    id:9,firstName: "ADMI",
-    lastName: "ZAKARYAE",
+    id:9,firstName: "Justin",
+    lastName: "Faciane",
     position: "Software Engineer",
     mobile: "+212 6 51 88 61 51",
     orders:[{
@@ -85,8 +85,8 @@ const customers = [{
         products: [{quantity:5,product:productList[0]}, {quantity:5,product:productList[1]},{quantity:5,product: productList[2]}],}
     ]
 },{
-    id:10,firstName: "ADMI",
-    lastName: "ZAKARYAE",
+    id:10,firstName: "Justin",
+    lastName: "Faciane",
     position: "Software Engineer",
     mobile: "+212 6 51 88 61 51",
     orders:[{
@@ -94,8 +94,8 @@ const customers = [{
         products: [{quantity:5,product:productList[0]}, {quantity:5,product:productList[1]},{quantity:5,product: productList[2]}],}
     ]
 },{
-    id:11,firstName: "ADMI",
-    lastName: "ZAKARYAE",
+    id:11,firstName: "Justin",
+    lastName: "Faciane",
     position: "Software Engineer",
     mobile: "+212 6 51 88 61 51",
     orders:[{
@@ -103,8 +103,8 @@ const customers = [{
         products: [{quantity:5,product:productList[0]}, {quantity:5,product:productList[1]},{quantity:5,product: productList[2]}],}
     ]
 },{
-    id:12,firstName: "ADMI",
-    lastName: "ZAKARYAE",
+    id:12,firstName: "Justin",
+    lastName: "Faciane",
     position: "Software Engineer",
     mobile: "+212 6 51 88 61 51",
     orders:[{
@@ -113,8 +113,8 @@ const customers = [{
     ]
 }
 ,{
-    id:13,firstName: "ADMI",
-    lastName: "ZAKARYAE",
+    id:13,firstName: "Justin",
+    lastName: "Faciane",
     position: "Software Engineer",
     mobile: "+212 6 51 88 61 51",
     orders:[{
@@ -122,8 +122,8 @@ const customers = [{
         products: [{quantity:5,product:productList[0]}, {quantity:5,product:productList[1]},{quantity:5,product: productList[2]}],}
     ]
 },{
-    id:14,firstName: "ADMI",
-    lastName: "ZAKARYAE",
+    id:14,firstName: "Justin",
+    lastName: "Faciane",
     position: "Software Engineer",
     mobile: "+212 6 51 88 61 51",
     orders:[{
@@ -131,8 +131,8 @@ const customers = [{
         products: [{quantity:5,product:productList[0]}, {quantity:5,product:productList[1]},{quantity:5,product: productList[2]}],}
     ]
 },{
-    id:15,firstName: "ADMI",
-    lastName: "ZAKARYAE",
+    id:15,firstName: "Justin",
+    lastName: "Faciane",
     position: "Software Engineer",
     mobile: "+212 6 51 88 61 51",
     orders:[{
@@ -141,8 +141,8 @@ const customers = [{
     ]
 }
 ,{
-    id:16,firstName: "ADMI",
-    lastName: "ZAKARYAE",
+    id:16,firstName: "Justin",
+    lastName: "Faciane",
     position: "Software Engineer",
     mobile: "+212 6 51 88 61 51",
     orders:[{
@@ -150,8 +150,8 @@ const customers = [{
         products: [{quantity:5,product:productList[0]}, {quantity:5,product:productList[1]},{quantity:5,product: productList[2]}],}
     ]
 },{
-    id:17,firstName: "ADMI",
-    lastName: "ZAKARYAE",
+    id:17,firstName: "Justin",
+    lastName: "Faciane",
     position: "Software Engineer",
     mobile: "+212 6 51 88 61 51",
     orders:[{
@@ -159,8 +159,8 @@ const customers = [{
         products: [{quantity:5,product:productList[0]}, {quantity:5,product:productList[1]},{quantity:5,product: productList[2]}],}
     ]
 },{
-    id:18,firstName: "ADMI",
-    lastName: "ZAKARYAE",
+    id:18,firstName: "Justin",
+    lastName: "Faciane",
     position: "Software Engineer",
     mobile: "+212 6 51 88 61 51",
     orders:[{
@@ -169,8 +169,8 @@ const customers = [{
     ]
 }
 ,{
-    id:19,firstName: "ADMI",
-    lastName: "ZAKARYAE",
+    id:19,firstName: "Justin",
+    lastName: "Faciane",
     position: "Software Engineer",
     mobile: "+212 6 51 88 61 51",
     orders:[{
@@ -178,8 +178,8 @@ const customers = [{
         products: [{quantity:5,product:productList[0]}, {quantity:5,product:productList[1]},{quantity:5,product: productList[2]}],}
     ]
 },{
-    id:20,firstName: "ADMI",
-    lastName: "ZAKARYAE",
+    id:20,firstName: "Justin",
+    lastName: "Faciane",
     position: "Software Engineer",
     mobile: "+212 6 51 88 61 51",
     orders:[{
