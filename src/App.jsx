@@ -11,6 +11,10 @@ import {
 } from "react-router-dom";
 import Home from "./components/bodyComponents/Home/Home";
 import Inventory from "./components/bodyComponents/inventory/Inventory";
+import Schedule from "./components/bodyComponents/schedule/Schedule";
+import Parties from "./components/bodyComponents/parties/Parties";
+import Notes from "./components/bodyComponents/notes/Notes";
+import Team from "./components/bodyComponents/team/Team";
 import Customer from "./components/bodyComponents/customer/Customer";
 import Revenue from "./components/bodyComponents/revenue/Revenue";
 import Growth from "./components/bodyComponents/growth/Growth";
@@ -96,6 +100,10 @@ function App() {
         <Route index element={<RootPage />} />
         <Route path="/home" element={<Home />}></Route>
         <Route path="/inventory" element={<Inventory />}></Route>
+        <Route path="/schedule" element={<Schedule />}></Route>
+        <Route path="/parties" element={<Parties />}></Route>
+        <Route path="/notes" element={<Notes />}></Route>
+        <Route path="/team" element={<Team />}></Route>
         <Route path="/orders" element={<Order />}></Route>
         <Route path="/customers" element={<Customer />}></Route>
         <Route path="/revenue" element={<Revenue />}></Route>

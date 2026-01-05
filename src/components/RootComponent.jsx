@@ -1,5 +1,5 @@
 import NavBarComponent from "./NavBarComponent";
-import { Box, Grid } from "@mui/material";
+import { Box } from "@mui/material";
 import SideBarComponent from "./SideBarComponent";
 import { Outlet } from "react-router-dom";
 
@@ -8,20 +8,18 @@ export default function RootComponent() {
     <>
       <NavBarComponent />
       <Box
-        sx={
-          {
-            backgroundColor: "transparent",
-          }
-        }
+        sx={{
+          backgroundColor: "transparent",
+          display: "flex",
+          alignItems: "stretch"
+        }}
       >
-        <Grid container spacing={0}>
-          <Grid item md={2} sm={0}>
-            <SideBarComponent />
-          </Grid>
-          <Grid item md={10}>
-            <Outlet />
-          </Grid>
-        </Grid>
+        <Box sx={{ width: 190, flexShrink: 0 }}>
+          <SideBarComponent />
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Outlet />
+        </Box>
       </Box>
     </>
   );

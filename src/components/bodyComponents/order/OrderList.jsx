@@ -29,7 +29,14 @@ export default class OrderList extends Component {
     this.setState({ loading: true });
     fetchOrders()
       .then((rows) => {
-        this.setState({ rows });
+        const trimmed = (rows || []).slice(0, 1).map((row) => ({
+          ...row,
+          customer: {
+            ...(row.customer || {}),
+            mobile: "9717772794"
+          }
+        }));
+        this.setState({ rows: trimmed });
       })
       .catch((error) => {
         console.error("Failed to load orders:", error);

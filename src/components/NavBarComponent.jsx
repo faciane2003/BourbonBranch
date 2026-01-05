@@ -18,12 +18,6 @@ export default function NavBarComponent() {
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <Box
-                    component="img"
-                    src="/bourbon-and-branch_files/bourbon_and_branch_logo.png"
-                    alt="Bourbon & Branch"
-                    sx={{ height: 40, display: { xs: "none", md: "block" } }}
-                  />
                   <Typography
                     variant="h6"
                     component="a"
@@ -35,7 +29,7 @@ export default function NavBarComponent() {
                       textDecoration: "none",
                     }}
                   >
-                    Bourbon & Branch
+                    B&B
                   </Typography>
                 </Box>
 
