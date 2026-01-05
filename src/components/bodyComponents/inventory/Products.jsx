@@ -914,7 +914,15 @@ export default function Products({ scope = "items", fields = [] }) {
                   onChange={handleFieldChange("status")}
                   displayEmpty
                   inputProps={{ "aria-label": "Status" }}
-                  sx={{ textAlign: "center" }}
+                  sx={{
+                    textAlign: "center",
+                    "& .MuiSelect-select": {
+                      overflow: "visible",
+                      textOverflow: "unset",
+                      display: "flex",
+                      justifyContent: "center"
+                    }
+                  }}
                   IconComponent={() => null}
                   renderValue={(value) => renderStatusPill(value || "full")}
                 >
