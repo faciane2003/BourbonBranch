@@ -14,8 +14,9 @@ app.get("/health", (req, res) => {
 const databaseUrl = process.env.DATABASE_URL;
 const pool = new Pool({
   connectionString: databaseUrl,
-  ssl:
-    process.env.NODE_ENV === "production" && databaseUrl
+  ssl: databaseUrl?.includes("render.com")
+    ? { rejectUnauthorized: false }
+    : process.env.NODE_ENV === "production" && databaseUrl
       ? { rejectUnauthorized: false }
       : false
 });
