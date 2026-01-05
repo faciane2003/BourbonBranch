@@ -119,19 +119,20 @@ app.get("/api/orders", async (req, res) => {
 });
 
 app.post("/api/products", async (req, res) => {
-  const { name, category, price, stock, needed } = req.body || {};
+  const { name, category, price, stock, needed, status } = req.body || {};
   const normalizedNeeded = needed === undefined ? 0 : needed;
+  const normalizedStatus = status || "full";
   if (!name || !category || price === undefined || stock === undefined) {
     return res.status(400).json({ error: "Missing product fields" });
   }
   try {
     const result = await pool.query(
       `
-        INSERT INTO products (name, category, price, stock, needed)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO products (name, category, price, stock, needed, status)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *
       `,
-      [name, category, price, stock, normalizedNeeded]
+      [name, category, price, stock, normalizedNeeded, normalizedStatus]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -142,8 +143,9 @@ app.post("/api/products", async (req, res) => {
 
 app.put("/api/products/:id", async (req, res) => {
   const { id } = req.params;
-  const { name, category, price, stock, needed } = req.body || {};
+  const { name, category, price, stock, needed, status } = req.body || {};
   const normalizedNeeded = needed === undefined ? 0 : needed;
+  const normalizedStatus = status || "full";
   if (!name || !category || price === undefined || stock === undefined) {
     return res.status(400).json({ error: "Missing product fields" });
   }
@@ -151,11 +153,11 @@ app.put("/api/products/:id", async (req, res) => {
     const result = await pool.query(
       `
         UPDATE products
-        SET name = $1, category = $2, price = $3, stock = $4, needed = $5
-        WHERE id = $6
+        SET name = $1, category = $2, price = $3, stock = $4, needed = $5, status = $6
+        WHERE id = $7
         RETURNING *
       `,
-      [name, category, price, stock, normalizedNeeded, id]
+      [name, category, price, stock, normalizedNeeded, normalizedStatus, id]
     );
     if (result.rowCount === 0) {
       return res.status(404).json({ error: "Product not found" });

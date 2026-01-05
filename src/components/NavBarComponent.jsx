@@ -1,6 +1,6 @@
 import { AppBar, Box, Button, Container, Grid, Paper, Typography } from "@mui/material";
 
-export default function NavBarComponent() {
+export default function NavBarComponent({ onToggleNav }) {
   return (
     <Grid container>
       <Grid item md={12}>
@@ -18,19 +18,26 @@ export default function NavBarComponent() {
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <Typography
-                    variant="h6"
-                    component="a"
-                    href="/"
+                  <Button
+                    onClick={onToggleNav}
                     sx={{
                       fontWeight: 700,
                       letterSpacing: ".2rem",
                       color: "var(--bb-gold)",
                       textDecoration: "none",
+                      minWidth: "auto",
+                      px: 2,
+                      py: 0.5,
+                      borderRadius: 999,
+                      border: "1px solid rgba(230, 209, 153, 0.35)",
+                      bgcolor: "rgba(21, 16, 14, 0.7)",
+                      "&:hover": {
+                        bgcolor: "rgba(21, 16, 14, 0.9)"
+                      }
                     }}
                   >
                     B&B
-                  </Typography>
+                  </Button>
                 </Box>
 
                 <Box

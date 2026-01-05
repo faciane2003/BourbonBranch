@@ -1,15 +1,17 @@
 import {
   Box,
   Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
+  FormControl,
+  MenuItem,
+  Popover,
+  Select,
   TextField
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
+  getSortedRowModel,
   useReactTable
 } from "@tanstack/react-table";
 import {
@@ -23,6 +25,8 @@ export default function Products() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [sorting, setSorting] = useState([]);
   const [dialogMode, setDialogMode] = useState("add");
   const [activeProductId, setActiveProductId] = useState(null);
   const [formValues, setFormValues] = useState({
@@ -30,12 +34,22 @@ export default function Products() {
     category: "General",
     price: "0",
     stock: "",
-    needed: ""
+    needed: "",
+    status: "full"
   });
   const [formErrors, setFormErrors] = useState({});
   const roundedFieldSx = {
     "& .MuiOutlinedInput-root": {
       borderRadius: "22px"
+    }
+  };
+  const centeredInputSx = {
+    "& input": {
+      textAlign: "center"
+    },
+    "& input::placeholder": {
+      textAlign: "center",
+      width: "100%"
     }
   };
 
@@ -44,7 +58,7 @@ export default function Products() {
     fetchProducts()
       .then((data) => {
         if (isMounted) {
-          setRows(data.slice(-2));
+          setRows(data);
         }
       })
       .catch((error) => {
@@ -66,7 +80,7 @@ export default function Products() {
 
   useEffect(() => loadProducts(), []);
 
-  const openAddDialog = () => {
+  const openAddDialog = (event) => {
     setDialogMode("add");
     setActiveProductId(null);
     setFormValues({
@@ -74,13 +88,15 @@ export default function Products() {
       category: "General",
       price: "0",
       stock: "",
-      needed: ""
+      needed: "",
+      status: "full"
     });
     setFormErrors({});
+    setAnchorEl(event?.currentTarget || null);
     setDialogOpen(true);
   };
 
-  const openEditDialog = (product) => {
+  const openEditDialog = (event, product) => {
     setDialogMode("edit");
     setActiveProductId(product.id);
     setFormValues({
@@ -88,15 +104,18 @@ export default function Products() {
       category: product.category || "General",
       price: String(product.price ?? "0"),
       stock: String(product.stock ?? ""),
-      needed: String(product.needed ?? "")
+      needed: String(product.needed ?? ""),
+      status: product.status === "active" ? "full" : product.status || "full"
     });
     setFormErrors({});
+    setAnchorEl(event?.currentTarget || null);
     setDialogOpen(true);
   };
 
   const handleDialogClose = () => {
     setDialogOpen(false);
     setFormErrors({});
+    setAnchorEl(null);
   };
 
   const handleFieldChange = (field) => (event) => {
@@ -129,6 +148,19 @@ export default function Products() {
     };
   };
 
+  const deriveStatus = (stockValue, neededValue) => {
+    if (neededValue && neededValue > 0) {
+      return "request";
+    }
+    if (stockValue === 0) {
+      return "out";
+    }
+    if (stockValue < 2) {
+      return "low";
+    }
+    return "full";
+  };
+
   const handleDialogSubmit = async () => {
     const { isValid, priceValue, stockValue, neededValue } = validateForm();
     if (!isValid) {
@@ -140,7 +172,8 @@ export default function Products() {
       category: formValues.category.trim() || "General",
       price: priceValue,
       stock: stockValue,
-      needed: neededValue ?? 0
+      needed: neededValue ?? 0,
+      status: deriveStatus(stockValue, neededValue)
     };
 
     try {
@@ -178,6 +211,39 @@ export default function Products() {
     }
   };
 
+  const statusStyles = {
+    full: { label: "Full", bg: "#2f6fa8" },
+    low: { label: "Low", bg: "#c7a445" },
+    out: { label: "Out", bg: "#a23b3b" },
+    ordered: { label: "Ordered", bg: "#2f8a53" },
+    request: { label: "Request", bg: "#7b5ba8" }
+  };
+
+  const renderStatusPill = (value) => {
+    const status = statusStyles[value] || statusStyles.full;
+    return (
+      <Box
+        component="span"
+        sx={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          px: 1.5,
+          py: 0.25,
+          borderRadius: 999,
+          bgcolor: status.bg,
+          color: "#0f0b0a",
+          fontSize: 12,
+          fontWeight: 600,
+          textTransform: "uppercase",
+          minWidth: 70
+        }}
+      >
+        {status.label}
+      </Box>
+    );
+  };
+
   const columns = useMemo(
     () => [
       {
@@ -188,14 +254,23 @@ export default function Products() {
         cell: (info) => info.getValue()
       },
       {
+        header: "Status",
+        accessorKey: "status",
+        size: 160,
+        minSize: 0,
+        cell: (info) => renderStatusPill(info.getValue() || "full")
+      },
+      {
         header: "Stock",
-        accessorKey: "stock",
+        accessorFn: (row) => Number(row.stock ?? 0),
+        id: "stock",
         size: 180,
         minSize: 0
       },
       {
         header: "Needed",
-        accessorKey: "needed",
+        accessorFn: (row) => Number(row.needed ?? 0),
+        id: "needed",
         size: 180,
         minSize: 0,
         cell: (info) => info.getValue() ?? ""
@@ -210,7 +285,7 @@ export default function Products() {
             <Button
               size="small"
               variant="outlined"
-              onClick={() => openEditDialog(row.original)}
+              onClick={(event) => openEditDialog(event, row.original)}
             >
               Edit
             </Button>
@@ -232,7 +307,10 @@ export default function Products() {
   const table = useReactTable({
     data: rows,
     columns,
+    state: { sorting },
+    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     columnResizeMode: "onChange"
   });
 
@@ -240,7 +318,7 @@ export default function Products() {
     <Box>
       <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2 }}>
         <Button variant="contained" onClick={openAddDialog}>
-          +
+          Add
         </Button>
       </Box>
       {error && (
@@ -249,8 +327,8 @@ export default function Products() {
       <Box
         component="table"
         sx={{
-          width: "60%",
-          tableLayout: "fixed",
+          width: "fit-content",
+          maxWidth: "100%",
           borderCollapse: "collapse",
           color: "var(--bb-sand)",
           backgroundColor: "rgba(21, 16, 14, 0.9)",
@@ -265,13 +343,15 @@ export default function Products() {
                   component="th"
                   key={header.id}
                   sx={{
-                    textAlign: "left",
+                    textAlign: "center",
                     padding: "10px 12px",
                     color: "var(--bb-gold)",
                     borderBottom: "1px solid rgba(230, 209, 153, 0.2)",
                     position: "relative",
-                    width: header.getSize()
+                    cursor: header.column.getCanSort() ? "pointer" : "default",
+                    userSelect: "none"
                   }}
+                  onClick={header.column.getToggleSortingHandler()}
                 >
                   {flexRender(
                     header.column.columnDef.header,
@@ -322,7 +402,6 @@ export default function Products() {
                     sx={{
                       padding: "8px 12px",
                       borderBottom: "1px solid rgba(230, 209, 153, 0.1)",
-                      width: cell.column.getSize(),
                       whiteSpace: "normal",
                       wordBreak: "break-word"
                     }}
@@ -337,98 +416,116 @@ export default function Products() {
             ))}
         </Box>
       </Box>
-      <Dialog
+      <Popover
         open={dialogOpen}
         onClose={handleDialogClose}
-        maxWidth="xs"
+        anchorEl={anchorEl}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        transformOrigin={{ vertical: "top", horizontal: "left" }}
         PaperProps={{
           sx: {
             borderRadius: "160px / 48px",
             border: "1px solid rgba(230, 209, 153, 0.25)",
-            bgcolor: "rgba(15, 11, 10, 0.9)",
+            bgcolor: "rgb(15, 11, 10)",
             boxShadow: "inset 0 0 30px rgba(0, 0, 0, 0.45)",
             minHeight: 270,
+            width: 320,
             display: "flex",
-            flexDirection: "column"
+            flexDirection: "column",
+            p: 2,
+            overflow: "hidden"
           }
         }}
       >
-        <DialogContent
+        <Box
           sx={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            pt: 9
+            display: "grid",
+            gap: 1,
+            gridAutoRows: "min-content",
+            width: "75%",
+            justifyItems: "center",
+            mt: 4,
+            mb: 0,
+            mx: "auto"
           }}
         >
-          <Box
-            sx={{
-              display: "grid",
-              gap: 1,
-              gridAutoRows: "min-content",
-              width: "80%",
-              justifyItems: "center"
-            }}
-          >
-            <TextField
-              placeholder="Item"
-              value={formValues.name}
-              onChange={handleFieldChange("name")}
-              error={Boolean(formErrors.name)}
-              helperText={formErrors.name}
-              autoFocus
-              fullWidth
-              sx={roundedFieldSx}
-              size="small"
-              InputProps={{ sx: { textAlign: "center" } }}
-            />
-            <TextField
-              placeholder="Needed"
-              type="text"
-              value={formValues.needed}
-              onChange={handleFieldChange("needed")}
-              error={Boolean(formErrors.needed)}
-              helperText={formErrors.needed}
-              inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}
-              fullWidth
-              sx={roundedFieldSx}
-              size="small"
-              InputProps={{ sx: { textAlign: "center" } }}
-            />
-            <TextField
-              placeholder="Current"
-              type="text"
-              value={formValues.stock}
-              onChange={handleFieldChange("stock")}
-              error={Boolean(formErrors.stock)}
-              helperText={formErrors.stock}
-              inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}
-              fullWidth
-              sx={roundedFieldSx}
-              size="small"
-              InputProps={{ sx: { textAlign: "center" } }}
-            />
-          </Box>
-        </DialogContent>
-        <Box sx={{ flex: 1 }} />
-        <DialogActions
+          <TextField
+            placeholder="Item"
+            value={formValues.name}
+            onChange={handleFieldChange("name")}
+            error={Boolean(formErrors.name)}
+            helperText={formErrors.name}
+            autoFocus
+            fullWidth
+            sx={{ ...roundedFieldSx, ...centeredInputSx }}
+            size="small"
+          />
+          <TextField
+            placeholder="Needed"
+            type="text"
+            value={formValues.needed}
+            onChange={handleFieldChange("needed")}
+            error={Boolean(formErrors.needed)}
+            helperText={formErrors.needed}
+            inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}
+            fullWidth
+            sx={{ ...roundedFieldSx, ...centeredInputSx }}
+            size="small"
+          />
+          <TextField
+            placeholder="Current"
+            type="text"
+            value={formValues.stock}
+            onChange={handleFieldChange("stock")}
+            error={Boolean(formErrors.stock)}
+            helperText={formErrors.stock}
+            inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}
+            fullWidth
+            sx={{ ...roundedFieldSx, ...centeredInputSx }}
+            size="small"
+          />
+          <FormControl fullWidth size="small" sx={roundedFieldSx}>
+            <Select
+              value={formValues.status}
+              onChange={handleFieldChange("status")}
+              displayEmpty
+              inputProps={{ "aria-label": "Status" }}
+              sx={{ textAlign: "center" }}
+              IconComponent={() => null}
+              renderValue={(value) => renderStatusPill(value || "full")}
+            >
+              <MenuItem value="full" sx={{ bgcolor: statusStyles.full.bg }}>
+                Full
+              </MenuItem>
+              <MenuItem value="low" sx={{ bgcolor: statusStyles.low.bg }}>
+                Low
+              </MenuItem>
+              <MenuItem value="out" sx={{ bgcolor: statusStyles.out.bg }}>
+                Out
+              </MenuItem>
+              <MenuItem value="ordered" sx={{ bgcolor: statusStyles.ordered.bg }}>
+                Ordered
+              </MenuItem>
+              <MenuItem value="request" sx={{ bgcolor: statusStyles.request.bg }}>
+                Request
+              </MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+        <Box
           sx={{
-            px: 3,
-            py: 0,
+            display: "flex",
             justifyContent: "center",
             gap: 2,
-            mt: -12.5
+            mt: 3
           }}
         >
           <Button variant="contained" onClick={handleDialogSubmit}>
-            {dialogMode === "add" ? "Add" : "Save"}
+            Save
           </Button>
           <Button onClick={handleDialogClose}>Cancel</Button>
-        </DialogActions>
-        <Box sx={{ flex: 1 }} />
-      </Dialog>
+        </Box>
+      </Popover>
     </Box>
   );
 }

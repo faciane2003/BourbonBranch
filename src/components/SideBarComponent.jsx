@@ -35,7 +35,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
 
-export default function SideBarComponent() {
+export default function SideBarComponent({ onSelect }) {
   const navigate = useNavigate();
   const location = useLocation();
   const currentPage = location.pathname;
@@ -163,9 +163,9 @@ export default function SideBarComponent() {
           bgcolor: "rgba(15, 11, 10, 0.75)",
           border: "1px solid rgba(230, 209, 153, 0.25)",
           borderRadius: "240px / 64px",
-          mx: 1,
+          mx: 0,
           my: 2,
-          p: 2,
+          p: 0,
           boxShadow: "inset 0 0 24px rgba(0, 0, 0, 0.4)"
         }}
       >
@@ -174,30 +174,38 @@ export default function SideBarComponent() {
             <ListItem disablePadding dense={true} key={comp.title}>
               <Box width="100%">
                 <ListItemButton
-                  onClick={() => navigate(comp.path)}
+                  onClick={() => {
+                    navigate(comp.path);
+                    onSelect?.();
+                  }}
                   selected={index === activeIndex && currentPage === comp.path}
                   sx={{
                     mb: 3,
                     borderLeft: 0,
                     borderColor: "primary.main",
-                    ml: 1,
+                    ml: 0,
                     borderRadius: 4,
+                    pl: 0,
                     py: 0,
                     minHeight: 24,
                     height: 24,
                     justifyContent: "flex-start"
                   }}
                 >
-                  <ListItemIcon sx={{ minWidth: 32 }}>
-                    <IconButton sx={{ p: 0 }}>{comp.component}</IconButton>
+                  <ListItemIcon sx={{ minWidth: 16, mr: 0 }}>
+                    <IconButton sx={{ p: 0, ml: 0 }}>
+                      {comp.component}
+                    </IconButton>
                   </ListItemIcon>
                   <ListItemText
                     primary={comp.title}
                     primaryTypographyProps={{
                       fontSize: "medium",
                       fontWeight: activeIndex === index ? "bold" : "",
-                      color: activeIndex === index ? "primary.main" : "inherit"
+                      color: activeIndex === index ? "primary.main" : "inherit",
+                      textAlign: "left"
                     }}
+                    sx={{ textAlign: "left" }}
                   />
                 </ListItemButton>
               </Box>
@@ -212,16 +220,17 @@ export default function SideBarComponent() {
                   mb: 3,
                   borderLeft: 0,
                   borderColor: "primary.main",
-                  ml: 1,
+                  ml: 0,
                   borderRadius: 4,
+                    pl: 0,
                   py: 0,
                   minHeight: 24,
                   height: 24,
                   justifyContent: "flex-start"
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 32 }}>
-                  <IconButton sx={{ p: 0 }}>
+                <ListItemIcon sx={{ minWidth: 16, mr: 0 }}>
+                  <IconButton sx={{ p: 0, ml: 0 }}>
                     <StarOutlined fontSize="medium" color="primary" />
                   </IconButton>
                 </ListItemIcon>
@@ -230,8 +239,10 @@ export default function SideBarComponent() {
                   primaryTypographyProps={{
                     fontSize: "medium",
                     fontWeight: adminActive ? "bold" : "",
-                    color: adminActive ? "primary.main" : "inherit"
+                    color: adminActive ? "primary.main" : "inherit",
+                    textAlign: "left"
                   }}
+                  sx={{ textAlign: "left" }}
                 />
                 {adminOpen ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>
@@ -243,22 +254,28 @@ export default function SideBarComponent() {
                 <ListItem disablePadding dense={true} key={comp.title}>
                   <Box width="100%">
                     <ListItemButton
-                      onClick={() => navigate(comp.path)}
+                      onClick={() => {
+                        navigate(comp.path);
+                        onSelect?.();
+                      }}
                       selected={currentPage === comp.path}
                       sx={{
                         mb: 1,
                         borderLeft: 0,
                         borderColor: "primary.main",
-                        ml: 4,
+                        ml: 0,
                         borderRadius: 4,
+                        pl: 0,
                         py: 0,
                         minHeight: 22,
                         height: 22,
                         justifyContent: "flex-start"
                       }}
                     >
-                      <ListItemIcon sx={{ minWidth: 28 }}>
-                        <IconButton sx={{ p: 0 }}>{comp.component}</IconButton>
+                      <ListItemIcon sx={{ minWidth: 16, mr: 0 }}>
+                        <IconButton sx={{ p: 0, ml: 0 }}>
+                          {comp.component}
+                        </IconButton>
                       </ListItemIcon>
                       <ListItemText
                         primary={comp.title}
@@ -268,8 +285,10 @@ export default function SideBarComponent() {
                           color:
                             currentPage === comp.path
                               ? "primary.main"
-                              : "inherit"
+                              : "inherit",
+                          textAlign: "left"
                         }}
+                        sx={{ textAlign: "left" }}
                       />
                     </ListItemButton>
                   </Box>
@@ -288,16 +307,17 @@ export default function SideBarComponent() {
                   mb: 2,
                   borderLeft: 0,
                   borderColor: "primary.main",
-                  ml: 1,
+                  ml: 0,
                   borderRadius: 4,
+                  pl: 0,
                   py: 0,
                   minHeight: 24,
                   height: 24,
                   justifyContent: "flex-start"
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 32 }}>
-                  <IconButton sx={{ p: 0 }}>
+                <ListItemIcon sx={{ minWidth: 16, mr: 0 }}>
+                  <IconButton sx={{ p: 0, ml: 0 }}>
                     <LanguageOutlined fontSize="medium" color="primary" />
                   </IconButton>
                 </ListItemIcon>
@@ -306,8 +326,10 @@ export default function SideBarComponent() {
                   primaryTypographyProps={{
                     fontSize: "medium",
                     fontWeight: websiteActive ? "bold" : "",
-                    color: websiteActive ? "primary.main" : "inherit"
+                    color: websiteActive ? "primary.main" : "inherit",
+                    textAlign: "left"
                   }}
+                  sx={{ textAlign: "left" }}
                 />
                 {websiteOpen ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>
@@ -322,25 +344,30 @@ export default function SideBarComponent() {
                       onClick={() => {
                         if (comp.external) {
                           window.open(comp.path, "_blank", "noreferrer");
+                          onSelect?.();
                           return;
                         }
                         navigate(comp.path);
+                        onSelect?.();
                       }}
                       selected={currentPage === comp.path}
                       sx={{
                         mb: 1,
                         borderLeft: 0,
                         borderColor: "primary.main",
-                        ml: 4,
+                        ml: 0,
                         borderRadius: 4,
+                        pl: 0,
                         py: 0,
                         minHeight: 22,
                         height: 22,
                         justifyContent: "flex-start"
                       }}
                     >
-                      <ListItemIcon sx={{ minWidth: 28 }}>
-                        <IconButton sx={{ p: 0 }}>{comp.component}</IconButton>
+                      <ListItemIcon sx={{ minWidth: 16, mr: 0 }}>
+                        <IconButton sx={{ p: 0, ml: 0 }}>
+                          {comp.component}
+                        </IconButton>
                       </ListItemIcon>
                       <ListItemText
                         primary={comp.title}
@@ -350,8 +377,10 @@ export default function SideBarComponent() {
                           color:
                             currentPage === comp.path
                               ? "primary.main"
-                              : "inherit"
+                              : "inherit",
+                          textAlign: "left"
                         }}
+                        sx={{ textAlign: "left" }}
                       />
                     </ListItemButton>
                   </Box>
