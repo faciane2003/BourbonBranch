@@ -6,8 +6,15 @@ export default function NavBarComponent({ onToggleNav }) {
       <Grid item md={12}>
         <Paper elevation={4}>
           <AppBar
-            sx={{ padding: 2, backgroundColor: "rgba(15, 11, 10, 0.95)" }}
-            position="static"
+            sx={{
+              padding: 2,
+              backgroundColor: "rgba(15, 11, 10, 0.95)",
+              top: 0,
+              left: 0,
+              right: 0,
+              zIndex: (theme) => theme.zIndex.drawer + 1
+            }}
+            position="fixed"
           >
             <Container maxWidth="xxl">
               <Box

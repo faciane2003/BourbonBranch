@@ -126,7 +126,7 @@ app.get("/api/products", async (req, res) => {
   const scope = req.query.scope || "items";
   try {
     const result = await queryWithRetry(
-      "SELECT * FROM products WHERE scope = $1 ORDER BY id",
+      "SELECT * FROM products WHERE scope = $1 ORDER BY id DESC",
       [scope]
     );
     res.json(result.rows);
@@ -224,21 +224,52 @@ app.get("/api/orders", async (req, res) => {
 });
 
 app.post("/api/products", async (req, res) => {
-  const { name, category, price, stock, needed, status, scope } = req.body || {};
-  const normalizedNeeded = needed === undefined ? 0 : needed;
-  const normalizedStatus = status || "full";
+  const { name, category, price, stock, needed, status, scope, data } =
+    req.body || {};
   const normalizedScope = scope || "items";
-  if (!name || !category || price === undefined || stock === undefined) {
-    return res.status(400).json({ error: "Missing product fields" });
+  const normalizedData = data && typeof data === "object" ? data : {};
+
+  let normalizedName = name;
+  let normalizedCategory = category;
+  let normalizedPrice = price;
+  let normalizedStock = stock;
+  let normalizedNeeded = needed === undefined ? 0 : needed;
+  let normalizedStatus = status || "full";
+
+  if (normalizedScope === "items") {
+    if (!normalizedName || !normalizedCategory || normalizedPrice === undefined || normalizedStock === undefined) {
+      return res.status(400).json({ error: "Missing product fields" });
+    }
+  } else {
+    const dataKeys = Object.keys(normalizedData || {});
+    const primaryValue = dataKeys.length ? normalizedData[dataKeys[0]] : "";
+    normalizedName =
+      normalizedName || String(primaryValue || "").trim() || "Untitled";
+    normalizedCategory = normalizedCategory || "General";
+    normalizedPrice = normalizedPrice === undefined ? 0 : normalizedPrice;
+    normalizedStock = normalizedStock === undefined ? 0 : normalizedStock;
+    normalizedNeeded =
+      normalizedNeeded === undefined ? 0 : normalizedNeeded;
+    normalizedStatus = normalizedStatus || "full";
   }
+
   try {
     const result = await queryWithRetry(
       `
-        INSERT INTO products (name, category, price, stock, needed, status, scope)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO products (name, category, price, stock, needed, status, scope, data)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING *
       `,
-      [name, category, price, stock, normalizedNeeded, normalizedStatus, normalizedScope]
+      [
+        normalizedName,
+        normalizedCategory,
+        normalizedPrice,
+        normalizedStock,
+        normalizedNeeded,
+        normalizedStatus,
+        normalizedScope,
+        normalizedData
+      ]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -249,29 +280,77 @@ app.post("/api/products", async (req, res) => {
 
 app.put("/api/products/:id", async (req, res) => {
   const { id } = req.params;
-  const { name, category, price, stock, needed, status, scope } = req.body || {};
-  const normalizedNeeded = needed === undefined ? 0 : needed;
-  const normalizedStatus = status || "full";
-  const normalizedScope = scope || "items";
-  if (!name || !category || price === undefined || stock === undefined) {
-    return res.status(400).json({ error: "Missing product fields" });
-  }
+  const { name, category, price, stock, needed, status, scope, data } =
+    req.body || {};
+  const normalizedData = data && typeof data === "object" ? data : {};
+
   try {
+    let existing = null;
+    if (scope !== "items") {
+      const existingResult = await queryWithRetry(
+        "SELECT * FROM products WHERE id = $1",
+        [id]
+      );
+      if (existingResult.rowCount === 0) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      existing = existingResult.rows[0];
+    }
+
+    const normalizedScope = scope || existing?.scope || "items";
+    const mergedData =
+      normalizedScope === "items"
+        ? normalizedData
+        : { ...(existing?.data || {}), ...(normalizedData || {}) };
+
+    let normalizedName = name ?? existing?.name;
+    let normalizedCategory = category ?? existing?.category;
+    let normalizedPrice = price ?? existing?.price;
+    let normalizedStock = stock ?? existing?.stock;
+    let normalizedNeeded =
+      needed === undefined ? existing?.needed ?? 0 : needed;
+    let normalizedStatus = status || existing?.status || "full";
+
+    if (normalizedScope === "items") {
+      if (!normalizedName || !normalizedCategory || normalizedPrice === undefined || normalizedStock === undefined) {
+        return res.status(400).json({ error: "Missing product fields" });
+      }
+    } else {
+      const dataKeys = Object.keys(mergedData || {});
+      const primaryValue = dataKeys.length ? mergedData[dataKeys[0]] : "";
+      normalizedName =
+        normalizedName || String(primaryValue || "").trim() || "Untitled";
+      normalizedCategory = normalizedCategory || "General";
+      normalizedPrice = normalizedPrice === undefined ? 0 : normalizedPrice;
+      normalizedStock = normalizedStock === undefined ? 0 : normalizedStock;
+      normalizedNeeded =
+        normalizedNeeded === undefined ? 0 : normalizedNeeded;
+      normalizedStatus = normalizedStatus || "full";
+    }
+
     const result = await queryWithRetry(
       `
         UPDATE products
-        SET name = $1, category = $2, price = $3, stock = $4, needed = $5, status = $6, scope = $7
-        WHERE id = $8
+        SET name = $1,
+            category = $2,
+            price = $3,
+            stock = $4,
+            needed = $5,
+            status = $6,
+            scope = $7,
+            data = $8
+        WHERE id = $9
         RETURNING *
       `,
       [
-        name,
-        category,
-        price,
-        stock,
+        normalizedName,
+        normalizedCategory,
+        normalizedPrice,
+        normalizedStock,
         normalizedNeeded,
         normalizedStatus,
         normalizedScope,
+        mergedData,
         id
       ]
     );

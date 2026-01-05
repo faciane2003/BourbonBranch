@@ -24,7 +24,6 @@ import {
   LocalOfferOutlined,
   CelebrationOutlined,
   RestaurantMenuOutlined,
-  SettingsOutlined,
   EditOutlined,
   FitnessCenterOutlined
 } from "@mui/icons-material";
@@ -67,11 +66,6 @@ export default function SideBarComponent() {
         title: "Team",
         component: <GroupsOutlined sx={{ fontSize: 16 }} color="primary" />,
         path: "/team"
-      },
-      {
-        title: "Settings",
-        component: <SettingsOutlined sx={{ fontSize: 16 }} color="primary" />,
-        path: "/settings"
       }
     ],
     []

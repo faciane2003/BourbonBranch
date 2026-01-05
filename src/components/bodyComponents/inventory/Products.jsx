@@ -10,7 +10,7 @@ import {
   Snackbar,
   TextField
 } from "@mui/material";
-import { DeleteOutline } from "@mui/icons-material";
+import { DeleteOutline, Edit } from "@mui/icons-material";
 import { useEffect, useMemo, useState } from "react";
 import {
   flexRender,
@@ -24,7 +24,56 @@ import {
   fetchProducts,
   updateProduct
 } from "../../../api/api";
-export default function Products({ scope = "items" }) {
+export default function Products({ scope = "items", fields = [] }) {
+  const isItemsScope = scope === "items";
+  const todayValue = () => new Date().toISOString().slice(0, 10);
+  const timeValue = () => {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+    return `${hh}:${mm}`;
+  };
+  const formatDateLabel = (value) => {
+    if (!value) {
+      return "";
+    }
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return value;
+    }
+    const monthNames = [
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC"
+    ];
+    const month = monthNames[parsed.getMonth()];
+    const day = String(parsed.getDate()).padStart(2, "0");
+    const year = parsed.getFullYear();
+    return `${month} ${day} ${year}`;
+  };
+  const formatTimeLabel = (value) => {
+    if (!value) {
+      return "";
+    }
+    const [rawHours, rawMinutes] = String(value).split(":");
+    const hours = Number(rawHours);
+    const minutes = rawMinutes ?? "00";
+    if (Number.isNaN(hours)) {
+      return value;
+    }
+    const suffix = hours >= 12 ? "PM" : "AM";
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${String(minutes).padStart(2, "0")} ${suffix}`;
+  };
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -38,14 +87,42 @@ export default function Products({ scope = "items" }) {
   const [statusTouched, setStatusTouched] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [formValues, setFormValues] = useState({
-    name: "",
-    category: "General",
-    price: "0",
-    stock: "",
-    needed: "",
-    status: "full"
-  });
+  const buildFormValues = (product) => {
+    if (isItemsScope) {
+      return {
+        name: product?.name || "",
+        category: product?.category || "General",
+        price: String(product?.price ?? "0"),
+        stock: String(product?.stock ?? ""),
+        needed: String(product?.needed ?? ""),
+        status: product?.status === "active" ? "full" : product?.status || "full"
+      };
+    }
+
+    const next = {};
+    fields.forEach((field) => {
+      if (product) {
+        if (field.type === "date") {
+          next[field.key] = product.data?.[field.key] || todayValue();
+          return;
+        }
+        next[field.key] = product.data?.[field.key] ?? "";
+        return;
+      }
+      if (field.type === "date") {
+        next[field.key] = todayValue();
+        return;
+      }
+      if (field.type === "time") {
+        next[field.key] = timeValue();
+        return;
+      }
+      next[field.key] = "";
+    });
+    return next;
+  };
+
+  const [formValues, setFormValues] = useState(buildFormValues());
   const [formErrors, setFormErrors] = useState({});
   const roundedFieldSx = {
     "& .MuiOutlinedInput-root": {
@@ -92,14 +169,7 @@ export default function Products({ scope = "items" }) {
   const openAddDialog = (event) => {
     setDialogMode("add");
     setActiveProductId(null);
-    setFormValues({
-      name: "",
-      category: "General",
-      price: "0",
-      stock: "",
-      needed: "",
-      status: "full"
-    });
+    setFormValues(buildFormValues());
     setStatusTouched(false);
     setFormErrors({});
     setAnchorEl(event?.currentTarget || null);
@@ -109,14 +179,7 @@ export default function Products({ scope = "items" }) {
   const openEditDialog = (event, product) => {
     setDialogMode("edit");
     setActiveProductId(product.id);
-    setFormValues({
-      name: product.name || "",
-      category: product.category || "General",
-      price: String(product.price ?? "0"),
-      stock: String(product.stock ?? ""),
-      needed: String(product.needed ?? ""),
-      status: product.status === "active" ? "full" : product.status || "full"
-    });
+    setFormValues(buildFormValues(product));
     setStatusTouched(false);
     setFormErrors({});
     setAnchorEl(event?.currentTarget || null);
@@ -137,6 +200,11 @@ export default function Products({ scope = "items" }) {
   };
 
   const validateForm = () => {
+    if (!isItemsScope) {
+      setFormErrors({});
+      return { isValid: true };
+    }
+
     const nextErrors = {};
     const priceValue = Number(formValues.price || 0);
     const stockValue = Number(formValues.stock);
@@ -197,29 +265,44 @@ export default function Products({ scope = "items" }) {
     }
 
     let updated = { ...currentRow };
-    if (columnId === "name") {
-      updated.name = String(editingValue).trim();
-    } else if (columnId === "stock") {
-      updated.stock = Number(editingValue || 0);
-    } else if (columnId === "needed") {
-      updated.needed = Number(editingValue || 0);
-    } else if (columnId === "status") {
-      updated.status = (overrideValue ?? editingValue) || "full";
+    const resolvedValue =
+      overrideValue && typeof overrideValue === "object" && "target" in overrideValue
+        ? overrideValue.target.value
+        : overrideValue;
+
+    if (isItemsScope) {
+      if (columnId === "name") {
+        updated.name = String(editingValue).trim();
+      } else if (columnId === "stock") {
+        updated.stock = Number(editingValue || 0);
+      } else if (columnId === "needed") {
+        updated.needed = Number(editingValue || 0);
+      } else if (columnId === "status") {
+        updated.status = (resolvedValue ?? editingValue) || "full";
+      }
+
+      if (columnId !== "status") {
+        updated.status = deriveStatus(Number(updated.stock || 0), updated.status);
+      }
+    } else {
+      updated.data = { ...(updated.data || {}) };
+      updated.data[columnId] = resolvedValue ?? editingValue;
     }
 
-    if (columnId !== "status") {
-      updated.status = deriveStatus(Number(updated.stock || 0), updated.status);
-    }
-
-    const payload = {
-      name: updated.name,
-      category: updated.category || "General",
-      price: Number(updated.price || 0),
-      stock: Number(updated.stock || 0),
-      needed: Number(updated.needed || 0),
-      status: updated.status,
-      scope
-    };
+    const payload = isItemsScope
+      ? {
+          name: updated.name,
+          category: updated.category || "General",
+          price: Number(updated.price || 0),
+          stock: Number(updated.stock || 0),
+          needed: Number(updated.needed || 0),
+          status: updated.status,
+          scope
+        }
+      : {
+          data: updated.data || {},
+          scope
+        };
 
     try {
       await updateProduct(updated.id, payload);
@@ -240,21 +323,42 @@ export default function Products({ scope = "items" }) {
       return;
     }
 
-    const computedStatus =
-      dialogMode === "add"
-        ? formValues.status || "full"
-        : statusTouched
-          ? formValues.status || "full"
-          : deriveStatus(stockValue, formValues.status);
-    const payload = {
-      name: formValues.name.trim(),
-      category: formValues.category.trim() || "General",
-      price: priceValue,
-      stock: stockValue,
-      needed: neededValue ?? 0,
-      status: computedStatus,
-      scope
-    };
+    const payload = (() => {
+      if (isItemsScope) {
+        const computedStatus =
+          dialogMode === "add"
+            ? formValues.status || "full"
+            : statusTouched
+              ? formValues.status || "full"
+              : deriveStatus(stockValue, formValues.status);
+        return {
+          name: formValues.name.trim(),
+          category: formValues.category.trim() || "General",
+          price: priceValue,
+          stock: stockValue,
+          needed: neededValue ?? 0,
+          status: computedStatus,
+          scope
+        };
+      }
+
+      const data = {};
+      fields.forEach((field) => {
+        data[field.key] = formValues[field.key] ?? "";
+      });
+      const primaryKey = fields[0]?.key;
+      const fallbackName = primaryKey ? String(data[primaryKey] || "").trim() : "";
+      return {
+        name: fallbackName || "Untitled",
+        category: "General",
+        price: 0,
+        stock: 0,
+        needed: 0,
+        status: "full",
+        scope,
+        data
+      };
+    })();
 
     try {
       if (dialogMode === "add") {
@@ -370,7 +474,8 @@ export default function Products({ scope = "items" }) {
           fontSize: { xs: 10, sm: 12 },
           fontWeight: 600,
           textTransform: "uppercase",
-          minWidth: { xs: 52, sm: 70 },
+          minWidth: { xs: 0, sm: 70 },
+          width: { xs: "100%", sm: "auto" },
           maxWidth: "100%",
           px: { xs: 0.75, sm: 1.5 }
         }}
@@ -381,44 +486,116 @@ export default function Products({ scope = "items" }) {
   };
 
   const columns = useMemo(
-    () => [
-      {
-        header: "Item",
-        accessorKey: "name",
-        size: 360,
+    () => {
+      if (isItemsScope) {
+        return [
+          {
+            header: "Edit",
+            id: "edit",
+            size: 120,
+            minSize: 0,
+            meta: { align: "center" },
+            cell: ({ row }) => (
+              <IconButton
+                size="small"
+                onClick={(event) => openEditDialog(event, row.original)}
+              >
+                <Edit fontSize="small" />
+              </IconButton>
+            )
+          },
+          {
+            header: "Item",
+            accessorKey: "name",
+            size: 360,
+            minSize: 0,
+            meta: { editable: true, inputType: "text", align: "center" },
+            cell: (info) => info.getValue()
+          },
+          {
+            header: "Status",
+            accessorKey: "status",
+            size: 160,
+            minSize: 0,
+            meta: { editable: true, inputType: "status", align: "center" },
+            cell: (info) => renderStatusPill(info.getValue() || "full")
+          },
+          {
+            header: "Stock",
+            accessorFn: (row) => Number(row.stock ?? 0),
+            id: "stock",
+            size: 180,
+            minSize: 0,
+            meta: { editable: true, inputType: "number", align: "center" }
+          },
+          {
+            header: "Needed",
+            accessorFn: (row) => Number(row.needed ?? 0),
+            id: "needed",
+            size: 180,
+            minSize: 0,
+            meta: { editable: true, inputType: "number", align: "center" },
+            cell: (info) => info.getValue() ?? ""
+          },
+          {
+            header: "Delete",
+            id: "actions",
+            size: 200,
+            minSize: 0,
+            meta: { align: "center" },
+            cell: ({ row }) => (
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => handleDeleteProduct(row.original)}
+              >
+                <DeleteOutline fontSize="small" />
+              </IconButton>
+            )
+          }
+        ];
+      }
+
+      const dynamicColumns = fields.map((field) => ({
+        header: field.label,
+        accessorFn: (row) => row.data?.[field.key] ?? "",
+        id: field.key,
+        size: 200,
         minSize: 0,
-        meta: { editable: true, inputType: "text", align: "center" },
-        cell: (info) => info.getValue()
-      },
-      {
-        header: "Status",
-        accessorKey: "status",
-        size: 160,
+        meta: {
+          editable: true,
+          inputType: field.type,
+          align: "center",
+          options: field.options || []
+        },
+        cell: (info) =>
+          field.type === "date"
+            ? formatDateLabel(info.getValue())
+            : field.type === "time"
+              ? formatTimeLabel(info.getValue())
+              : info.getValue() ?? ""
+      }));
+
+      dynamicColumns.unshift({
+        header: "Edit",
+        id: "edit",
+        size: 120,
         minSize: 0,
-        meta: { editable: true, inputType: "status", align: "center" },
-        cell: (info) => renderStatusPill(info.getValue() || "full")
-      },
-      {
-        header: "Stock",
-        accessorFn: (row) => Number(row.stock ?? 0),
-        id: "stock",
-        size: 180,
-        minSize: 0,
-        meta: { editable: true, inputType: "number", align: "center" }
-      },
-      {
-        header: "Needed",
-        accessorFn: (row) => Number(row.needed ?? 0),
-        id: "needed",
-        size: 180,
-        minSize: 0,
-        meta: { editable: true, inputType: "number", align: "center" },
-        cell: (info) => info.getValue() ?? ""
-      },
-      {
+        meta: { align: "center" },
+        cell: ({ row }) => (
+          <IconButton
+            size="small"
+            onClick={(event) => openEditDialog(event, row.original)}
+          >
+            <Edit fontSize="small" />
+          </IconButton>
+        )
+      });
+
+      dynamicColumns.push({
         header: "Delete",
         id: "actions",
-        size: 200,
+        size: 160,
         minSize: 0,
         meta: { align: "center" },
         cell: ({ row }) => (
@@ -430,9 +607,11 @@ export default function Products({ scope = "items" }) {
             <DeleteOutline fontSize="small" />
           </IconButton>
         )
-      }
-    ],
-    []
+      });
+
+      return dynamicColumns;
+    },
+    [fields, isItemsScope]
   );
 
   const table = useReactTable({
@@ -461,7 +640,6 @@ export default function Products({ scope = "items" }) {
           sx={{
             width: "100%",
             minWidth: "100%",
-            maxWidth: 900,
             tableLayout: "fixed",
             borderCollapse: "collapse",
             color: "var(--bb-sand)",
@@ -470,6 +648,15 @@ export default function Products({ scope = "items" }) {
             fontSize: { xs: "0.7rem", sm: "0.8rem", md: "0.9rem" }
           }}
         >
+          <Box component="colgroup">
+            {table.getVisibleLeafColumns().map((column) => (
+              <Box
+                component="col"
+                key={column.id}
+                sx={{ width: `${100 / columns.length}%` }}
+              />
+            ))}
+          </Box>
           <Box component="thead">
             {table.getHeaderGroups().map((headerGroup) => (
               <Box component="tr" key={headerGroup.id}>
@@ -485,7 +672,9 @@ export default function Products({ scope = "items" }) {
                       position: "relative",
                       cursor: header.column.getCanSort() ? "pointer" : "default",
                       userSelect: "none",
-                      whiteSpace: "nowrap"
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "clip"
                     }}
                     onClick={header.column.getToggleSortingHandler()}
                   >
@@ -532,12 +721,14 @@ export default function Products({ scope = "items" }) {
               table.getRowModel().rows.map((row) => (
                 <Box component="tr" key={row.id}>
                   {row.getVisibleCells().map((cell) => {
-                    const isEditing =
-                      editingCell?.rowId === row.original.id &&
-                      editingCell?.columnId === cell.column.id;
-                    const isEditable = cell.column.columnDef.meta?.editable;
-                    const inputType = cell.column.columnDef.meta?.inputType;
-                    const align = cell.column.columnDef.meta?.align || "left";
+                  const isEditing =
+                    editingCell?.rowId === row.original.id &&
+                    editingCell?.columnId === cell.column.id;
+                  const isEditable = cell.column.columnDef.meta?.editable;
+                  const inputType = cell.column.columnDef.meta?.inputType;
+                  const selectOptions =
+                    cell.column.columnDef.meta?.options || [];
+                  const align = cell.column.columnDef.meta?.align || "left";
 
                     return (
                       <Box
@@ -546,10 +737,10 @@ export default function Products({ scope = "items" }) {
                         sx={{
                           padding: { xs: "6px 6px", sm: "7px 8px", md: "8px 12px" },
                           borderBottom: "1px solid rgba(230, 209, 153, 0.1)",
-                          whiteSpace: "normal",
-                          overflowWrap: "break-word",
-                          textAlign: align,
-                          overflow: "hidden"
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "clip",
+                          textAlign: align
                         }}
                         onClick={() => {
                           if (!isEditable || isEditing) {
@@ -563,8 +754,8 @@ export default function Products({ scope = "items" }) {
                         }}
                       >
                         {isEditable && isEditing ? (
-                          inputType === "status" ? (
-                            <Select
+                        inputType === "status" ? (
+                          <Select
                               size="small"
                               value={editingValue || "full"}
                               onChange={(event) => {
@@ -572,7 +763,7 @@ export default function Products({ scope = "items" }) {
                                 setEditingValue(nextValue);
                                 commitCellEdit(nextValue);
                               }}
-                              sx={{ minWidth: 120 }}
+                              sx={{ minWidth: { xs: 80, sm: 120 } }}
                               IconComponent={() => null}
                               renderValue={(value) => renderStatusPill(value)}
                             >
@@ -592,17 +783,35 @@ export default function Products({ scope = "items" }) {
                                 Full
                               </MenuItem>
                             </Select>
-                          ) : (
-                            <TextField
-                              size="small"
-                              value={editingValue}
-                              onChange={(event) =>
-                                setEditingValue(event.target.value)
-                              }
-                              onBlur={commitCellEdit}
-                              onKeyDown={(event) => {
-                                if (event.key === "Enter") {
-                                  commitCellEdit();
+                        ) : inputType === "select" ? (
+                          <Select
+                            size="small"
+                            value={editingValue || ""}
+                            onChange={(event) => {
+                              const nextValue = event.target.value;
+                              setEditingValue(nextValue);
+                              commitCellEdit(nextValue);
+                            }}
+                            sx={{ minWidth: { xs: 80, sm: 120 } }}
+                            IconComponent={() => null}
+                          >
+                            {selectOptions.map((option) => (
+                              <MenuItem key={option} value={option}>
+                                {option}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        ) : (
+                          <TextField
+                            size="small"
+                            value={editingValue}
+                            onChange={(event) =>
+                              setEditingValue(event.target.value)
+                            }
+                            onBlur={() => commitCellEdit()}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                commitCellEdit();
                                 }
                                 if (event.key === "Escape") {
                                   cancelCellEdit();
@@ -662,65 +871,114 @@ export default function Products({ scope = "items" }) {
             mx: "auto"
           }}
         >
-          <TextField
-            placeholder="Item"
-            value={formValues.name}
-            onChange={handleFieldChange("name")}
-            error={Boolean(formErrors.name)}
-            helperText={formErrors.name}
-            autoFocus
-            fullWidth
-            sx={{ ...roundedFieldSx, ...centeredInputSx }}
-            size="small"
-          />
-          <TextField
-            placeholder="Needed"
-            type="text"
-            value={formValues.needed}
-            onChange={handleFieldChange("needed")}
-            error={Boolean(formErrors.needed)}
-            helperText={formErrors.needed}
-            inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}
-            fullWidth
-            sx={{ ...roundedFieldSx, ...centeredInputSx }}
-            size="small"
-          />
-          <TextField
-            placeholder="Current"
-            type="text"
-            value={formValues.stock}
-            onChange={handleFieldChange("stock")}
-            error={Boolean(formErrors.stock)}
-            helperText={formErrors.stock}
-            inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}
-            fullWidth
-            sx={{ ...roundedFieldSx, ...centeredInputSx }}
-            size="small"
-          />
-          <FormControl fullWidth size="small" sx={roundedFieldSx}>
-            <Select
-              value={formValues.status}
-              onChange={handleFieldChange("status")}
-              displayEmpty
-              inputProps={{ "aria-label": "Status" }}
-              sx={{ textAlign: "center" }}
-              IconComponent={() => null}
-              renderValue={(value) => renderStatusPill(value || "full")}
-            >
-              <MenuItem value="out" sx={statusMenuItemSx("out")}>
-                Out
-              </MenuItem>
-              <MenuItem value="low" sx={statusMenuItemSx("low")}>
-                Low
-              </MenuItem>
-              <MenuItem value="ordered" sx={statusMenuItemSx("ordered")}>
-                Ordered
-              </MenuItem>
-              <MenuItem value="full" sx={statusMenuItemSx("full")}>
-                Full
-              </MenuItem>
-            </Select>
-          </FormControl>
+          {isItemsScope ? (
+            <>
+              <TextField
+                placeholder="Item"
+                value={formValues.name}
+                onChange={handleFieldChange("name")}
+                error={Boolean(formErrors.name)}
+                helperText={formErrors.name}
+                autoFocus
+                fullWidth
+                sx={{ ...roundedFieldSx, ...centeredInputSx }}
+                size="small"
+              />
+              <TextField
+                placeholder="Needed"
+                type="text"
+                value={formValues.needed}
+                onChange={handleFieldChange("needed")}
+                error={Boolean(formErrors.needed)}
+                helperText={formErrors.needed}
+                inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}
+                fullWidth
+                sx={{ ...roundedFieldSx, ...centeredInputSx }}
+                size="small"
+              />
+              <TextField
+                placeholder="Current"
+                type="text"
+                value={formValues.stock}
+                onChange={handleFieldChange("stock")}
+                error={Boolean(formErrors.stock)}
+                helperText={formErrors.stock}
+                inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}
+                fullWidth
+                sx={{ ...roundedFieldSx, ...centeredInputSx }}
+                size="small"
+              />
+              <FormControl fullWidth size="small" sx={roundedFieldSx}>
+                <Select
+                  value={formValues.status}
+                  onChange={handleFieldChange("status")}
+                  displayEmpty
+                  inputProps={{ "aria-label": "Status" }}
+                  sx={{ textAlign: "center" }}
+                  IconComponent={() => null}
+                  renderValue={(value) => renderStatusPill(value || "full")}
+                >
+                  <MenuItem value="out" sx={statusMenuItemSx("out")}>
+                    Out
+                  </MenuItem>
+                  <MenuItem value="low" sx={statusMenuItemSx("low")}>
+                    Low
+                  </MenuItem>
+                  <MenuItem value="ordered" sx={statusMenuItemSx("ordered")}>
+                    Ordered
+                  </MenuItem>
+                  <MenuItem value="full" sx={statusMenuItemSx("full")}>
+                    Full
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            </>
+          ) : (
+            fields.map((field, index) =>
+              field.type === "select" ? (
+                <FormControl
+                  key={field.key}
+                  fullWidth
+                  size="small"
+                  sx={roundedFieldSx}
+                >
+                  <Select
+                    value={formValues[field.key] ?? ""}
+                    onChange={handleFieldChange(field.key)}
+                    displayEmpty
+                    inputProps={{ "aria-label": field.label }}
+                    sx={{ textAlign: "center" }}
+                    IconComponent={() => null}
+                    autoFocus={index === 0 && field.type === "text"}
+                    renderValue={(value) =>
+                      value ? value : field.label
+                    }
+                  >
+                    <MenuItem value="" disabled>
+                      {field.label}
+                    </MenuItem>
+                    {(field.options || []).map((option) => (
+                      <MenuItem key={option} value={option}>
+                        {option}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              ) : (
+                <TextField
+                  key={field.key}
+                  placeholder={field.label}
+                  type={field.type || "text"}
+                  value={formValues[field.key] ?? ""}
+                  onChange={handleFieldChange(field.key)}
+                  autoFocus={index === 0 && field.type === "text"}
+                  fullWidth
+                  sx={{ ...roundedFieldSx, ...centeredInputSx }}
+                  size="small"
+                />
+              )
+            )
+          )}
         </Box>
         <Box
           sx={{

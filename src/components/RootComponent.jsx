@@ -14,7 +14,8 @@ export default function RootComponent() {
         sx={{
           backgroundColor: "transparent",
           display: "flex",
-          alignItems: "stretch"
+          alignItems: "stretch",
+          pt: "64px"
         }}
       >
         <Drawer

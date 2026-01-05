@@ -1,7 +1,7 @@
 import { Box, Grid, Stack, Typography } from "@mui/material";
 import Products from "../inventory/Products";
 
-export default function ItemTableCard({ title, scope }) {
+export default function ItemTableCard({ title, scope, fields }) {
   return (
     <Box>
       <Grid container sx={{ mx: 3, p: 3 }}>
@@ -24,7 +24,7 @@ export default function ItemTableCard({ title, scope }) {
               spacing={2}
               sx={{ px: 3, pb: 2, flexWrap: "wrap" }}
             />
-            <Products scope={scope} />
+            <Products scope={scope} fields={fields} />
           </Box>
         </Grid>
       </Grid>
