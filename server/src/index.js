@@ -7,10 +7,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/health", (req, res) => {
-  res.json({ ok: true });
-});
-
 const databaseUrl = process.env.DATABASE_URL;
 const pool = new Pool({
   connectionString: databaseUrl,
@@ -21,9 +17,114 @@ const pool = new Pool({
       : false
 });
 
+pool.on("error", (error) => {
+  console.error("Unexpected database idle client error:", error);
+});
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const retryableCodes = new Set([
+  "ECONNRESET",
+  "ECONNREFUSED",
+  "ETIMEDOUT",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "57P01",
+  "57P02",
+  "57P03",
+  "53300",
+  "55000",
+  "08006",
+  "08001"
+]);
+
+const isRetryableError = (error) => {
+  if (!error) {
+    return false;
+  }
+  if (retryableCodes.has(error.code)) {
+    return true;
+  }
+  const message = String(error.message || "");
+  return message.includes("terminating connection") || message.includes("timeout");
+};
+
+const initDbWithRetry = async (retries = 5) => {
+  let attempt = 0;
+  while (true) {
+    try {
+      await initDb(pool);
+      return;
+    } catch (error) {
+      if (!isRetryableError(error) || attempt >= retries) {
+        throw error;
+      }
+      attempt += 1;
+      console.warn(
+        `DB init retry ${attempt}/${retries} after error:`,
+        error.code || error.message
+      );
+      await sleep(500 * attempt);
+    }
+  }
+};
+
+const queryWithRetry = async (text, params, { retries = 2, delayMs = 250 } = {}) => {
+  let attempt = 0;
+  while (true) {
+    try {
+      return await pool.query(text, params);
+    } catch (error) {
+      if (!isRetryableError(error) || attempt >= retries) {
+        throw error;
+      }
+      attempt += 1;
+      console.warn(
+        `DB query retry ${attempt}/${retries} after error:`,
+        error.code || error.message
+      );
+      await sleep(delayMs * attempt);
+    }
+  }
+};
+
+const getClientWithRetry = async ({ retries = 2, delayMs = 250 } = {}) => {
+  let attempt = 0;
+  while (true) {
+    try {
+      return await pool.connect();
+    } catch (error) {
+      if (!isRetryableError(error) || attempt >= retries) {
+        throw error;
+      }
+      attempt += 1;
+      console.warn(
+        `DB connect retry ${attempt}/${retries} after error:`,
+        error.code || error.message
+      );
+      await sleep(delayMs * attempt);
+    }
+  }
+};
+
+app.get("/health", (req, res) => {
+  res.json({ ok: true });
+});
+
+app.get("/health/db", async (req, res) => {
+  const start = Date.now();
+  try {
+    await queryWithRetry("SELECT 1");
+    res.json({ ok: true, latencyMs: Date.now() - start });
+  } catch (error) {
+    console.error("Database health check failed:", error);
+    res.status(503).json({ ok: false });
+  }
+});
+
 app.get("/api/products", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM products ORDER BY id");
+    const result = await queryWithRetry("SELECT * FROM products ORDER BY id");
     res.json(result.rows);
   } catch (error) {
     console.error("Failed to load products:", error);
@@ -33,7 +134,7 @@ app.get("/api/products", async (req, res) => {
 
 app.get("/api/customers", async (req, res) => {
   try {
-    const result = await pool.query(
+    const result = await queryWithRetry(
       `
         SELECT c.id,
                c.first_name AS "firstName",
@@ -56,7 +157,7 @@ app.get("/api/customers", async (req, res) => {
 
 app.get("/api/orders", async (req, res) => {
   try {
-    const result = await pool.query(
+    const result = await queryWithRetry(
       `
         SELECT o.id AS "orderId",
                o.created_at AS "createdAt",
@@ -126,7 +227,7 @@ app.post("/api/products", async (req, res) => {
     return res.status(400).json({ error: "Missing product fields" });
   }
   try {
-    const result = await pool.query(
+    const result = await queryWithRetry(
       `
         INSERT INTO products (name, category, price, stock, needed, status)
         VALUES ($1, $2, $3, $4, $5, $6)
@@ -150,7 +251,7 @@ app.put("/api/products/:id", async (req, res) => {
     return res.status(400).json({ error: "Missing product fields" });
   }
   try {
-    const result = await pool.query(
+    const result = await queryWithRetry(
       `
         UPDATE products
         SET name = $1, category = $2, price = $3, stock = $4, needed = $5, status = $6
@@ -172,7 +273,7 @@ app.put("/api/products/:id", async (req, res) => {
 app.delete("/api/products/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const usage = await pool.query(
+    const usage = await queryWithRetry(
       "SELECT 1 FROM order_items WHERE product_id = $1 LIMIT 1",
       [id]
     );
@@ -181,7 +282,7 @@ app.delete("/api/products/:id", async (req, res) => {
         .status(409)
         .json({ error: "Product is used by existing orders" });
     }
-    const result = await pool.query(
+    const result = await queryWithRetry(
       "DELETE FROM products WHERE id = $1 RETURNING id",
       [id]
     );
@@ -201,7 +302,7 @@ app.post("/api/customers", async (req, res) => {
     return res.status(400).json({ error: "Missing customer first name" });
   }
   try {
-    const result = await pool.query(
+    const result = await queryWithRetry(
       `
         INSERT INTO customers (first_name, last_name, position, mobile)
         VALUES ($1, $2, $3, $4)
@@ -227,7 +328,7 @@ app.put("/api/customers/:id", async (req, res) => {
     return res.status(400).json({ error: "Missing customer first name" });
   }
   try {
-    const result = await pool.query(
+    const result = await queryWithRetry(
       `
         UPDATE customers
         SET first_name = $1,
@@ -256,7 +357,7 @@ app.put("/api/customers/:id", async (req, res) => {
 app.delete("/api/customers/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const usage = await pool.query(
+    const usage = await queryWithRetry(
       "SELECT 1 FROM orders WHERE customer_id = $1 LIMIT 1",
       [id]
     );
@@ -265,7 +366,7 @@ app.delete("/api/customers/:id", async (req, res) => {
         .status(409)
         .json({ error: "Customer has existing orders" });
     }
-    const result = await pool.query(
+    const result = await queryWithRetry(
       "DELETE FROM customers WHERE id = $1 RETURNING id",
       [id]
     );
@@ -284,7 +385,7 @@ app.post("/api/orders", async (req, res) => {
   if (!customerId || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: "Missing order fields" });
   }
-  const client = await pool.connect();
+  const client = await getClientWithRetry();
   try {
     await client.query("BEGIN");
 
@@ -330,7 +431,7 @@ app.put("/api/orders/:id", async (req, res) => {
   if (!customerId || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: "Missing order fields" });
   }
-  const client = await pool.connect();
+  const client = await getClientWithRetry();
   try {
     await client.query("BEGIN");
 
@@ -371,7 +472,7 @@ app.put("/api/orders/:id", async (req, res) => {
 app.delete("/api/orders/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query(
+    const result = await queryWithRetry(
       "DELETE FROM orders WHERE id = $1 RETURNING id",
       [id]
     );
@@ -386,7 +487,7 @@ app.delete("/api/orders/:id", async (req, res) => {
 });
 
 const port = process.env.PORT || 5171;
-initDb(pool)
+initDbWithRetry()
   .then(() => {
     app.listen(port, () => {
       console.log(`Backend running on http://localhost:${port}`);

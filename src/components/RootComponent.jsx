@@ -32,7 +32,7 @@ export default function RootComponent() {
             }
           }}
         >
-          <SideBarComponent onSelect={() => setNavCollapsed(true)} />
+          <SideBarComponent />
         </Drawer>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Outlet />

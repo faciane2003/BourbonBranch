@@ -30,12 +30,13 @@ import {
   RestaurantMenuOutlined,
   SettingsOutlined,
   EditOutlined,
+  FitnessCenterOutlined,
   TrendingUpOutlined
 } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
 
-export default function SideBarComponent({ onSelect }) {
+export default function SideBarComponent() {
   const navigate = useNavigate();
   const location = useLocation();
   const currentPage = location.pathname;
@@ -44,32 +45,37 @@ export default function SideBarComponent({ onSelect }) {
     () => [
       {
         title: "Items",
-        component: <LocalBarOutlined fontSize="medium" color="primary" />,
+        component: <LocalBarOutlined sx={{ fontSize: 16 }} color="primary" />,
         path: "/inventory"
       },
       {
         title: "Schedule",
-        component: <AccessTimeOutlined fontSize="medium" color="primary" />,
+        component: <AccessTimeOutlined sx={{ fontSize: 16 }} color="primary" />,
         path: "/schedule"
       },
       {
         title: "Parties",
-        component: <CelebrationOutlined fontSize="medium" color="primary" />,
+        component: <CelebrationOutlined sx={{ fontSize: 16 }} color="primary" />,
         path: "/parties"
       },
       {
         title: "Notes",
-        component: <EditOutlined fontSize="medium" color="primary" />,
+        component: <EditOutlined sx={{ fontSize: 16 }} color="primary" />,
         path: "/notes"
       },
       {
+        title: "Tasks",
+        component: <FitnessCenterOutlined sx={{ fontSize: 16 }} color="primary" />,
+        path: "/tasks"
+      },
+      {
         title: "Team",
-        component: <GroupsOutlined fontSize="medium" color="primary" />,
+        component: <GroupsOutlined sx={{ fontSize: 16 }} color="primary" />,
         path: "/team"
       },
       {
         title: "Settings",
-        component: <SettingsOutlined fontSize="medium" color="primary" />,
+        component: <SettingsOutlined sx={{ fontSize: 16 }} color="primary" />,
         path: "/settings"
       }
     ],
@@ -80,22 +86,22 @@ export default function SideBarComponent({ onSelect }) {
     () => [
       {
         title: "Orders",
-        component: <PeopleAltOutlined fontSize="medium" color="primary" />,
+        component: <PeopleAltOutlined sx={{ fontSize: 16 }} color="primary" />,
         path: "/orders"
       },
       {
         title: "Revenue",
-        component: <MonetizationOnOutlined fontSize="medium" color="primary" />,
+        component: <MonetizationOnOutlined sx={{ fontSize: 16 }} color="primary" />,
         path: "/revenue"
       },
       {
         title: "Growth",
-        component: <TrendingUpOutlined fontSize="medium" color="primary" />,
+        component: <TrendingUpOutlined sx={{ fontSize: 16 }} color="primary" />,
         path: "/growth"
       },
       {
         title: "Reports",
-        component: <DescriptionOutlined fontSize="medium" color="primary" />,
+        component: <DescriptionOutlined sx={{ fontSize: 16 }} color="primary" />,
         path: "/reports"
       }
     ],
@@ -106,40 +112,40 @@ export default function SideBarComponent({ onSelect }) {
     () => [
       {
         title: "Home",
-        component: <HomeOutlined fontSize="small" color="primary" />,
+        component: <HomeOutlined sx={{ fontSize: 14 }} color="primary" />,
         path: "/home"
       },
       {
         title: "Menus",
-        component: <RestaurantMenuOutlined fontSize="small" color="primary" />,
+        component: <RestaurantMenuOutlined sx={{ fontSize: 14 }} color="primary" />,
         path: "/menus"
       },
       {
         title: "Events",
-        component: <EventOutlined fontSize="small" color="primary" />,
+        component: <EventOutlined sx={{ fontSize: 14 }} color="primary" />,
         path: "/events"
       },
       {
         title: "Specials",
-        component: <LocalOfferOutlined fontSize="small" color="primary" />,
+        component: <LocalOfferOutlined sx={{ fontSize: 14 }} color="primary" />,
         path: "/specials"
       },
       {
         title: "Reservations",
-        component: <CalendarMonthOutlined fontSize="small" color="primary" />,
+        component: <CalendarMonthOutlined sx={{ fontSize: 14 }} color="primary" />,
         path:
           "https://tables.toasttab.com/restaurants/ab5db445-fe5d-42d3-a027-6e9c3964cf4d/findTime",
         external: true
       },
       {
         title: "Takeout",
-        component: <DeliveryDiningOutlined fontSize="small" color="primary" />,
+        component: <DeliveryDiningOutlined sx={{ fontSize: 14 }} color="primary" />,
         path: "https://www.toasttab.com/bourbon-branch-705-n-2nd-st",
         external: true
       },
       {
         title: "Contact",
-        component: <CallOutlined fontSize="small" color="primary" />,
+        component: <CallOutlined sx={{ fontSize: 14 }} color="primary" />,
         path: "/contact"
       }
     ],
@@ -160,12 +166,13 @@ export default function SideBarComponent({ onSelect }) {
     <>
       <Box
         sx={{
-          bgcolor: "rgba(15, 11, 10, 0.75)",
+          bgcolor: "rgb(15, 11, 10)",
           border: "1px solid rgba(230, 209, 153, 0.25)",
           borderRadius: "240px / 64px",
           mx: 0,
           my: 2,
-          p: 0,
+          p: "25px 0",
+          pl: 1,
           boxShadow: "inset 0 0 24px rgba(0, 0, 0, 0.4)"
         }}
       >
@@ -176,7 +183,6 @@ export default function SideBarComponent({ onSelect }) {
                 <ListItemButton
                   onClick={() => {
                     navigate(comp.path);
-                    onSelect?.();
                   }}
                   selected={index === activeIndex && currentPage === comp.path}
                   sx={{
@@ -185,14 +191,15 @@ export default function SideBarComponent({ onSelect }) {
                     borderColor: "primary.main",
                     ml: 0,
                     borderRadius: 4,
-                    pl: 0,
+                    pl: 1,
                     py: 0,
                     minHeight: 24,
                     height: 24,
-                    justifyContent: "flex-start"
+                    justifyContent: "center",
+                    gap: 1
                   }}
                 >
-                  <ListItemIcon sx={{ minWidth: 16, mr: 0 }}>
+                  <ListItemIcon sx={{ minWidth: "auto", mr: 1 }}>
                     <IconButton sx={{ p: 0, ml: 0 }}>
                       {comp.component}
                     </IconButton>
@@ -200,12 +207,12 @@ export default function SideBarComponent({ onSelect }) {
                   <ListItemText
                     primary={comp.title}
                     primaryTypographyProps={{
-                      fontSize: "medium",
+                      fontSize: "0.7rem",
                       fontWeight: activeIndex === index ? "bold" : "",
                       color: activeIndex === index ? "primary.main" : "inherit",
-                      textAlign: "left"
+                      textAlign: "center"
                     }}
-                    sx={{ textAlign: "left" }}
+                    sx={{ textAlign: "center" }}
                   />
                 </ListItemButton>
               </Box>
@@ -222,27 +229,28 @@ export default function SideBarComponent({ onSelect }) {
                   borderColor: "primary.main",
                   ml: 0,
                   borderRadius: 4,
-                    pl: 0,
+                  pl: 1,
                   py: 0,
                   minHeight: 24,
                   height: 24,
-                  justifyContent: "flex-start"
+                  justifyContent: "center",
+                  gap: 1
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 16, mr: 0 }}>
+                <ListItemIcon sx={{ minWidth: "auto", mr: 1 }}>
                   <IconButton sx={{ p: 0, ml: 0 }}>
-                    <StarOutlined fontSize="medium" color="primary" />
+                    <StarOutlined sx={{ fontSize: 16 }} color="primary" />
                   </IconButton>
                 </ListItemIcon>
                 <ListItemText
                   primary="Admin"
                   primaryTypographyProps={{
-                    fontSize: "medium",
+                    fontSize: "0.7rem",
                     fontWeight: adminActive ? "bold" : "",
                     color: adminActive ? "primary.main" : "inherit",
-                    textAlign: "left"
+                    textAlign: "center"
                   }}
-                  sx={{ textAlign: "left" }}
+                  sx={{ textAlign: "center" }}
                 />
                 {adminOpen ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>
@@ -256,7 +264,6 @@ export default function SideBarComponent({ onSelect }) {
                     <ListItemButton
                       onClick={() => {
                         navigate(comp.path);
-                        onSelect?.();
                       }}
                       selected={currentPage === comp.path}
                       sx={{
@@ -265,14 +272,15 @@ export default function SideBarComponent({ onSelect }) {
                         borderColor: "primary.main",
                         ml: 0,
                         borderRadius: 4,
-                        pl: 0,
+                        pl: 1,
                         py: 0,
                         minHeight: 22,
                         height: 22,
-                        justifyContent: "flex-start"
+                        justifyContent: "center",
+                        gap: 1
                       }}
                     >
-                      <ListItemIcon sx={{ minWidth: 16, mr: 0 }}>
+                      <ListItemIcon sx={{ minWidth: "auto", mr: 1 }}>
                         <IconButton sx={{ p: 0, ml: 0 }}>
                           {comp.component}
                         </IconButton>
@@ -280,15 +288,15 @@ export default function SideBarComponent({ onSelect }) {
                       <ListItemText
                         primary={comp.title}
                         primaryTypographyProps={{
-                          fontSize: "small",
+                          fontSize: "0.6rem",
                           fontWeight: currentPage === comp.path ? "bold" : "",
                           color:
                             currentPage === comp.path
                               ? "primary.main"
                               : "inherit",
-                          textAlign: "left"
+                          textAlign: "center"
                         }}
-                        sx={{ textAlign: "left" }}
+                        sx={{ textAlign: "center" }}
                       />
                     </ListItemButton>
                   </Box>
@@ -309,27 +317,28 @@ export default function SideBarComponent({ onSelect }) {
                   borderColor: "primary.main",
                   ml: 0,
                   borderRadius: 4,
-                  pl: 0,
+                  pl: 1,
                   py: 0,
                   minHeight: 24,
                   height: 24,
-                  justifyContent: "flex-start"
+                  justifyContent: "center",
+                  gap: 1
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 16, mr: 0 }}>
+                <ListItemIcon sx={{ minWidth: "auto", mr: 1 }}>
                   <IconButton sx={{ p: 0, ml: 0 }}>
-                    <LanguageOutlined fontSize="medium" color="primary" />
+                    <LanguageOutlined sx={{ fontSize: 16 }} color="primary" />
                   </IconButton>
                 </ListItemIcon>
                 <ListItemText
                   primary="Website"
                   primaryTypographyProps={{
-                    fontSize: "medium",
+                    fontSize: "0.7rem",
                     fontWeight: websiteActive ? "bold" : "",
                     color: websiteActive ? "primary.main" : "inherit",
-                    textAlign: "left"
+                    textAlign: "center"
                   }}
-                  sx={{ textAlign: "left" }}
+                  sx={{ textAlign: "center" }}
                 />
                 {websiteOpen ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>
@@ -344,11 +353,9 @@ export default function SideBarComponent({ onSelect }) {
                       onClick={() => {
                         if (comp.external) {
                           window.open(comp.path, "_blank", "noreferrer");
-                          onSelect?.();
                           return;
                         }
                         navigate(comp.path);
-                        onSelect?.();
                       }}
                       selected={currentPage === comp.path}
                       sx={{
@@ -357,14 +364,15 @@ export default function SideBarComponent({ onSelect }) {
                         borderColor: "primary.main",
                         ml: 0,
                         borderRadius: 4,
-                        pl: 0,
+                        pl: 1,
                         py: 0,
                         minHeight: 22,
                         height: 22,
-                        justifyContent: "flex-start"
+                        justifyContent: "center",
+                        gap: 1
                       }}
                     >
-                      <ListItemIcon sx={{ minWidth: 16, mr: 0 }}>
+                      <ListItemIcon sx={{ minWidth: "auto", mr: 1 }}>
                         <IconButton sx={{ p: 0, ml: 0 }}>
                           {comp.component}
                         </IconButton>
@@ -372,15 +380,15 @@ export default function SideBarComponent({ onSelect }) {
                       <ListItemText
                         primary={comp.title}
                         primaryTypographyProps={{
-                          fontSize: "small",
+                          fontSize: "0.6rem",
                           fontWeight: currentPage === comp.path ? "bold" : "",
                           color:
                             currentPage === comp.path
                               ? "primary.main"
                               : "inherit",
-                          textAlign: "left"
+                          textAlign: "center"
                         }}
-                        sx={{ textAlign: "left" }}
+                        sx={{ textAlign: "center" }}
                       />
                     </ListItemButton>
                   </Box>

@@ -1,4 +1,4 @@
-const { seedProducts, seedCustomers, seedOrders } = require("./seedData");
+const { seedCustomers } = require("./seedData");
 
 async function migrate(pool) {
   await pool.query(`
@@ -45,35 +45,16 @@ async function migrate(pool) {
 }
 
 async function seed(pool) {
-  const countResult = await pool.query(
-    "SELECT COUNT(*)::int AS count FROM products"
+  const customerCountResult = await pool.query(
+    "SELECT COUNT(*)::int AS count FROM customers"
   );
-  if (countResult.rows[0].count > 0) {
+  if (customerCountResult.rows[0].count > 0) {
     return;
   }
 
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-
-    for (const product of seedProducts) {
-      await client.query(
-        `
-        INSERT INTO products (id, name, category, price, stock, needed, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        ON CONFLICT (id) DO NOTHING
-      `,
-      [
-        product.id,
-        product.name,
-        product.category,
-        product.price,
-        product.stock,
-        product.needed ?? 0,
-        product.status ?? "full"
-      ]
-    );
-    }
 
     for (const customer of seedCustomers) {
       await client.query(
@@ -90,27 +71,6 @@ async function seed(pool) {
           customer.mobile
         ]
       );
-    }
-
-    for (const order of seedOrders) {
-      await client.query(
-        `
-          INSERT INTO orders (id, customer_id)
-          VALUES ($1, $2)
-          ON CONFLICT (id) DO NOTHING
-        `,
-        [order.id, order.customerId]
-      );
-
-      for (const item of order.items) {
-        await client.query(
-          `
-            INSERT INTO order_items (order_id, product_id, quantity)
-            VALUES ($1, $2, $3)
-          `,
-          [order.id, item.productId, item.quantity]
-        );
-      }
     }
 
     await client.query("COMMIT");

@@ -2,11 +2,13 @@ import {
   Box,
   Button,
   FormControl,
+  IconButton,
   MenuItem,
   Popover,
   Select,
   TextField
 } from "@mui/material";
+import { DeleteOutline } from "@mui/icons-material";
 import { useEffect, useMemo, useState } from "react";
 import {
   flexRender,
@@ -29,6 +31,9 @@ export default function Products() {
   const [sorting, setSorting] = useState([]);
   const [dialogMode, setDialogMode] = useState("add");
   const [activeProductId, setActiveProductId] = useState(null);
+  const [editingCell, setEditingCell] = useState(null);
+  const [editingValue, setEditingValue] = useState("");
+  const [statusTouched, setStatusTouched] = useState(false);
   const [formValues, setFormValues] = useState({
     name: "",
     category: "General",
@@ -91,6 +96,7 @@ export default function Products() {
       needed: "",
       status: "full"
     });
+    setStatusTouched(false);
     setFormErrors({});
     setAnchorEl(event?.currentTarget || null);
     setDialogOpen(true);
@@ -107,6 +113,7 @@ export default function Products() {
       needed: String(product.needed ?? ""),
       status: product.status === "active" ? "full" : product.status || "full"
     });
+    setStatusTouched(false);
     setFormErrors({});
     setAnchorEl(event?.currentTarget || null);
     setDialogOpen(true);
@@ -119,6 +126,9 @@ export default function Products() {
   };
 
   const handleFieldChange = (field) => (event) => {
+    if (field === "status") {
+      setStatusTouched(true);
+    }
     setFormValues((prev) => ({ ...prev, [field]: event.target.value }));
   };
 
@@ -148,7 +158,7 @@ export default function Products() {
     };
   };
 
-  const deriveStatus = (stockValue, neededValue) => {
+  const deriveStatus = (stockValue, neededValue, selectedStatus) => {
     if (neededValue && neededValue > 0) {
       return "request";
     }
@@ -158,7 +168,72 @@ export default function Products() {
     if (stockValue < 2) {
       return "low";
     }
+    if (selectedStatus === "ordered") {
+      return "ordered";
+    }
     return "full";
+  };
+
+  const startCellEdit = (rowId, columnId, value) => {
+    setEditingCell({ rowId, columnId });
+    setEditingValue(value ?? "");
+  };
+
+  const cancelCellEdit = () => {
+    setEditingCell(null);
+    setEditingValue("");
+  };
+
+  const commitCellEdit = async (overrideValue) => {
+    if (!editingCell) {
+      return;
+    }
+    const { rowId, columnId } = editingCell;
+    const currentRow = rows.find((row) => row.id === rowId);
+    if (!currentRow) {
+      cancelCellEdit();
+      return;
+    }
+
+    let updated = { ...currentRow };
+    if (columnId === "name") {
+      updated.name = String(editingValue).trim();
+    } else if (columnId === "stock") {
+      updated.stock = Number(editingValue || 0);
+    } else if (columnId === "needed") {
+      updated.needed = Number(editingValue || 0);
+    } else if (columnId === "status") {
+      updated.status = (overrideValue ?? editingValue) || "full";
+    }
+
+    if (columnId !== "status") {
+      updated.status = deriveStatus(
+        Number(updated.stock || 0),
+        Number(updated.needed || 0),
+        updated.status
+      );
+    }
+
+    const payload = {
+      name: updated.name,
+      category: updated.category || "General",
+      price: Number(updated.price || 0),
+      stock: Number(updated.stock || 0),
+      needed: Number(updated.needed || 0),
+      status: updated.status
+    };
+
+    try {
+      await updateProduct(updated.id, payload);
+      setRows((prev) =>
+        prev.map((row) => (row.id === updated.id ? updated : row))
+      );
+    } catch (error) {
+      console.error("Failed to update product:", error);
+      window.alert("Failed to update product.");
+    } finally {
+      cancelCellEdit();
+    }
   };
 
   const handleDialogSubmit = async () => {
@@ -167,22 +242,32 @@ export default function Products() {
       return;
     }
 
+    const computedStatus =
+      dialogMode === "add"
+        ? formValues.status || "full"
+        : statusTouched
+          ? formValues.status || "full"
+          : deriveStatus(stockValue, neededValue, formValues.status);
     const payload = {
       name: formValues.name.trim(),
       category: formValues.category.trim() || "General",
       price: priceValue,
       stock: stockValue,
       needed: neededValue ?? 0,
-      status: deriveStatus(stockValue, neededValue)
+      status: computedStatus
     };
 
     try {
       if (dialogMode === "add") {
-        await createProduct(payload);
+        const created = await createProduct(payload);
+        setRows((prev) => [created, ...prev]);
       } else {
-        await updateProduct(activeProductId, payload);
+        const updated = await updateProduct(activeProductId, payload);
+        setRows((prev) =>
+          prev.map((row) => (row.id === updated.id ? updated : row))
+        );
       }
-      await loadProducts();
+      loadProducts();
       handleDialogClose();
     } catch (error) {
       console.error(
@@ -219,6 +304,17 @@ export default function Products() {
     request: { label: "Request", bg: "#7b5ba8" }
   };
 
+  const statusMenuItemSx = (key) => ({
+    bgcolor: statusStyles[key].bg,
+    color: "#0f0b0a",
+    "&.Mui-selected": {
+      bgcolor: statusStyles[key].bg
+    },
+    "&:hover": {
+      bgcolor: statusStyles[key].bg
+    }
+  });
+
   const renderStatusPill = (value) => {
     const status = statusStyles[value] || statusStyles.full;
     return (
@@ -251,6 +347,7 @@ export default function Products() {
         accessorKey: "name",
         size: 360,
         minSize: 0,
+        meta: { editable: true, inputType: "text" },
         cell: (info) => info.getValue()
       },
       {
@@ -258,6 +355,7 @@ export default function Products() {
         accessorKey: "status",
         size: 160,
         minSize: 0,
+        meta: { editable: true, inputType: "status" },
         cell: (info) => renderStatusPill(info.getValue() || "full")
       },
       {
@@ -265,7 +363,8 @@ export default function Products() {
         accessorFn: (row) => Number(row.stock ?? 0),
         id: "stock",
         size: 180,
-        minSize: 0
+        minSize: 0,
+        meta: { editable: true, inputType: "number" }
       },
       {
         header: "Needed",
@@ -273,31 +372,22 @@ export default function Products() {
         id: "needed",
         size: 180,
         minSize: 0,
+        meta: { editable: true, inputType: "number" },
         cell: (info) => info.getValue() ?? ""
       },
       {
-        header: "Actions",
+        header: "Delete",
         id: "actions",
         size: 200,
         minSize: 0,
         cell: ({ row }) => (
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={(event) => openEditDialog(event, row.original)}
-            >
-              Edit
-            </Button>
-            <Button
-              size="small"
-              color="error"
-              variant="outlined"
-              onClick={() => handleDeleteProduct(row.original)}
-            >
-              Delete
-            </Button>
-          </Box>
+          <IconButton
+            size="small"
+            color="error"
+            onClick={() => handleDeleteProduct(row.original)}
+          >
+            <DeleteOutline fontSize="small" />
+          </IconButton>
         )
       }
     ],
@@ -329,6 +419,7 @@ export default function Products() {
         sx={{
           width: "fit-content",
           maxWidth: "100%",
+          tableLayout: "auto",
           borderCollapse: "collapse",
           color: "var(--bb-sand)",
           backgroundColor: "rgba(21, 16, 14, 0.9)",
@@ -349,7 +440,8 @@ export default function Products() {
                     borderBottom: "1px solid rgba(230, 209, 153, 0.2)",
                     position: "relative",
                     cursor: header.column.getCanSort() ? "pointer" : "default",
-                    userSelect: "none"
+                    userSelect: "none",
+                    whiteSpace: "nowrap"
                   }}
                   onClick={header.column.getToggleSortingHandler()}
                 >
@@ -395,23 +487,101 @@ export default function Products() {
           {!loading &&
             table.getRowModel().rows.map((row) => (
               <Box component="tr" key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <Box
-                    component="td"
-                    key={cell.id}
-                    sx={{
-                      padding: "8px 12px",
-                      borderBottom: "1px solid rgba(230, 209, 153, 0.1)",
-                      whiteSpace: "normal",
-                      wordBreak: "break-word"
-                    }}
-                  >
-                    {flexRender(
-                      cell.column.columnDef.cell,
-                      cell.getContext()
-                    )}
-                  </Box>
-                ))}
+                {row.getVisibleCells().map((cell) => {
+                  const isEditing =
+                    editingCell?.rowId === row.original.id &&
+                    editingCell?.columnId === cell.column.id;
+                  const isEditable = cell.column.columnDef.meta?.editable;
+                  const inputType = cell.column.columnDef.meta?.inputType;
+
+                  return (
+                    <Box
+                      component="td"
+                      key={cell.id}
+                      sx={{
+                        padding: "8px 12px",
+                        borderBottom: "1px solid rgba(230, 209, 153, 0.1)",
+                        whiteSpace: "normal"
+                      }}
+                      onClick={() => {
+                        if (!isEditable || isEditing) {
+                          return;
+                        }
+                        startCellEdit(
+                          row.original.id,
+                          cell.column.id,
+                          cell.getValue()
+                        );
+                      }}
+                    >
+                      {isEditable && isEditing ? (
+                        inputType === "status" ? (
+                          <Select
+                            size="small"
+                            value={editingValue || "full"}
+                            onChange={(event) => {
+                              const nextValue = event.target.value;
+                              setEditingValue(nextValue);
+                              commitCellEdit(nextValue);
+                            }}
+                            sx={{ minWidth: 120 }}
+                            IconComponent={() => null}
+                            renderValue={(value) => renderStatusPill(value)}
+                          >
+                            <MenuItem value="full" sx={statusMenuItemSx("full")}>
+                              Full
+                            </MenuItem>
+                            <MenuItem value="low" sx={statusMenuItemSx("low")}>
+                              Low
+                            </MenuItem>
+                            <MenuItem value="out" sx={statusMenuItemSx("out")}>
+                              Out
+                            </MenuItem>
+                            <MenuItem
+                              value="ordered"
+                              sx={statusMenuItemSx("ordered")}
+                            >
+                              Ordered
+                            </MenuItem>
+                            <MenuItem
+                              value="request"
+                              sx={statusMenuItemSx("request")}
+                            >
+                              Request
+                            </MenuItem>
+                          </Select>
+                        ) : (
+                          <TextField
+                            size="small"
+                            value={editingValue}
+                            onChange={(event) =>
+                              setEditingValue(event.target.value)
+                            }
+                            onBlur={commitCellEdit}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                commitCellEdit();
+                              }
+                              if (event.key === "Escape") {
+                                cancelCellEdit();
+                              }
+                            }}
+                            inputProps={
+                              inputType === "number"
+                                ? { inputMode: "numeric", pattern: "[0-9]*" }
+                                : undefined
+                            }
+                          />
+                        )
+                      ) : (
+                        flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )
+                      )}
+                    </Box>
+                  );
+                })}
               </Box>
             ))}
         </Box>
@@ -494,19 +664,19 @@ export default function Products() {
               IconComponent={() => null}
               renderValue={(value) => renderStatusPill(value || "full")}
             >
-              <MenuItem value="full" sx={{ bgcolor: statusStyles.full.bg }}>
+              <MenuItem value="full" sx={statusMenuItemSx("full")}>
                 Full
               </MenuItem>
-              <MenuItem value="low" sx={{ bgcolor: statusStyles.low.bg }}>
+              <MenuItem value="low" sx={statusMenuItemSx("low")}>
                 Low
               </MenuItem>
-              <MenuItem value="out" sx={{ bgcolor: statusStyles.out.bg }}>
+              <MenuItem value="out" sx={statusMenuItemSx("out")}>
                 Out
               </MenuItem>
-              <MenuItem value="ordered" sx={{ bgcolor: statusStyles.ordered.bg }}>
+              <MenuItem value="ordered" sx={statusMenuItemSx("ordered")}>
                 Ordered
               </MenuItem>
-              <MenuItem value="request" sx={{ bgcolor: statusStyles.request.bg }}>
+              <MenuItem value="request" sx={statusMenuItemSx("request")}>
                 Request
               </MenuItem>
             </Select>
