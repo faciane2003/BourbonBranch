@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   Button,
   FormControl,
@@ -6,6 +7,7 @@ import {
   MenuItem,
   Popover,
   Select,
+  Snackbar,
   TextField
 } from "@mui/material";
 import { DeleteOutline } from "@mui/icons-material";
@@ -22,7 +24,7 @@ import {
   fetchProducts,
   updateProduct
 } from "../../../api/api";
-export default function Products() {
+export default function Products({ scope = "items" }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -34,6 +36,8 @@ export default function Products() {
   const [editingCell, setEditingCell] = useState(null);
   const [editingValue, setEditingValue] = useState("");
   const [statusTouched, setStatusTouched] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [formValues, setFormValues] = useState({
     name: "",
     category: "General",
@@ -60,7 +64,7 @@ export default function Products() {
 
   const loadProducts = () => {
     let isMounted = true;
-    fetchProducts()
+    fetchProducts(scope)
       .then((data) => {
         if (isMounted) {
           setRows(data);
@@ -83,7 +87,7 @@ export default function Products() {
     };
   };
 
-  useEffect(() => loadProducts(), []);
+  useEffect(() => loadProducts(), [scope]);
 
   const openAddDialog = (event) => {
     setDialogMode("add");
@@ -158,10 +162,7 @@ export default function Products() {
     };
   };
 
-  const deriveStatus = (stockValue, neededValue, selectedStatus) => {
-    if (neededValue && neededValue > 0) {
-      return "request";
-    }
+  const deriveStatus = (stockValue, selectedStatus) => {
     if (stockValue === 0) {
       return "out";
     }
@@ -207,11 +208,7 @@ export default function Products() {
     }
 
     if (columnId !== "status") {
-      updated.status = deriveStatus(
-        Number(updated.stock || 0),
-        Number(updated.needed || 0),
-        updated.status
-      );
+      updated.status = deriveStatus(Number(updated.stock || 0), updated.status);
     }
 
     const payload = {
@@ -220,7 +217,8 @@ export default function Products() {
       price: Number(updated.price || 0),
       stock: Number(updated.stock || 0),
       needed: Number(updated.needed || 0),
-      status: updated.status
+      status: updated.status,
+      scope
     };
 
     try {
@@ -247,14 +245,15 @@ export default function Products() {
         ? formValues.status || "full"
         : statusTouched
           ? formValues.status || "full"
-          : deriveStatus(stockValue, neededValue, formValues.status);
+          : deriveStatus(stockValue, formValues.status);
     const payload = {
       name: formValues.name.trim(),
       category: formValues.category.trim() || "General",
       price: priceValue,
       stock: stockValue,
       needed: neededValue ?? 0,
-      status: computedStatus
+      status: computedStatus,
+      scope
     };
 
     try {
@@ -284,24 +283,63 @@ export default function Products() {
     }
   };
 
-  const handleDeleteProduct = async (product) => {
+  const finalizeDelete = async (product) => {
     try {
       await deleteProduct(product.id);
-      await loadProducts();
     } catch (error) {
       console.error("Failed to delete product:", error);
+      setRows((prev) =>
+        prev.some((row) => row.id === product.id)
+          ? prev
+          : [product, ...prev]
+      );
       window.alert(
         "Failed to delete product. It may be used by existing orders."
       );
     }
   };
 
+  const handleDeleteProduct = (product) => {
+    setRows((prev) => prev.filter((row) => row.id !== product.id));
+    setSnackbarOpen(true);
+
+    setPendingDelete((prev) => {
+      if (prev?.timeoutId) {
+        clearTimeout(prev.timeoutId);
+        finalizeDelete(prev.item);
+      }
+
+      const timeoutId = setTimeout(() => {
+        finalizeDelete(product).finally(() => {
+          setPendingDelete((current) =>
+            current?.item?.id === product.id ? null : current
+          );
+        });
+      }, 10000);
+
+      return { item: product, timeoutId };
+    });
+  };
+
+  const handleUndoDelete = () => {
+    if (!pendingDelete) {
+      return;
+    }
+    clearTimeout(pendingDelete.timeoutId);
+    setRows((prev) =>
+      prev.some((row) => row.id === pendingDelete.item.id)
+        ? prev
+        : [pendingDelete.item, ...prev]
+    );
+    setPendingDelete(null);
+    setSnackbarOpen(false);
+  };
+
   const statusStyles = {
-    full: { label: "Full", bg: "#2f6fa8" },
-    low: { label: "Low", bg: "#c7a445" },
     out: { label: "Out", bg: "#a23b3b" },
+    low: { label: "Low", bg: "#c7a445" },
     ordered: { label: "Ordered", bg: "#2f8a53" },
-    request: { label: "Request", bg: "#7b5ba8" }
+    full: { label: "Full", bg: "#2f6fa8" }
   };
 
   const statusMenuItemSx = (key) => ({
@@ -328,11 +366,13 @@ export default function Products() {
           py: 0.25,
           borderRadius: 999,
           bgcolor: status.bg,
-          color: "#0f0b0a",
-          fontSize: 12,
+          color: { xs: "#f7f1e5", sm: "#0f0b0a" },
+          fontSize: { xs: 10, sm: 12 },
           fontWeight: 600,
           textTransform: "uppercase",
-          minWidth: 70
+          minWidth: { xs: 52, sm: 70 },
+          maxWidth: "100%",
+          px: { xs: 0.75, sm: 1.5 }
         }}
       >
         {status.label}
@@ -347,7 +387,7 @@ export default function Products() {
         accessorKey: "name",
         size: 360,
         minSize: 0,
-        meta: { editable: true, inputType: "text" },
+        meta: { editable: true, inputType: "text", align: "center" },
         cell: (info) => info.getValue()
       },
       {
@@ -355,7 +395,7 @@ export default function Products() {
         accessorKey: "status",
         size: 160,
         minSize: 0,
-        meta: { editable: true, inputType: "status" },
+        meta: { editable: true, inputType: "status", align: "center" },
         cell: (info) => renderStatusPill(info.getValue() || "full")
       },
       {
@@ -364,7 +404,7 @@ export default function Products() {
         id: "stock",
         size: 180,
         minSize: 0,
-        meta: { editable: true, inputType: "number" }
+        meta: { editable: true, inputType: "number", align: "center" }
       },
       {
         header: "Needed",
@@ -372,7 +412,7 @@ export default function Products() {
         id: "needed",
         size: 180,
         minSize: 0,
-        meta: { editable: true, inputType: "number" },
+        meta: { editable: true, inputType: "number", align: "center" },
         cell: (info) => info.getValue() ?? ""
       },
       {
@@ -380,6 +420,7 @@ export default function Products() {
         id: "actions",
         size: 200,
         minSize: 0,
+        meta: { align: "center" },
         cell: ({ row }) => (
           <IconButton
             size="small"
@@ -414,176 +455,178 @@ export default function Products() {
       {error && (
         <Box sx={{ mb: 2, color: "var(--bb-copper)" }}>{error}</Box>
       )}
-      <Box
-        component="table"
-        sx={{
-          width: "fit-content",
-          maxWidth: "100%",
-          tableLayout: "auto",
-          borderCollapse: "collapse",
-          color: "var(--bb-sand)",
-          backgroundColor: "rgba(21, 16, 14, 0.9)",
-          border: "1px solid rgba(230, 209, 153, 0.2)"
-        }}
-      >
-        <Box component="thead">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <Box component="tr" key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <Box
-                  component="th"
-                  key={header.id}
-                  sx={{
-                    textAlign: "center",
-                    padding: "10px 12px",
-                    color: "var(--bb-gold)",
-                    borderBottom: "1px solid rgba(230, 209, 153, 0.2)",
-                    position: "relative",
-                    cursor: header.column.getCanSort() ? "pointer" : "default",
-                    userSelect: "none",
-                    whiteSpace: "nowrap"
-                  }}
-                  onClick={header.column.getToggleSortingHandler()}
-                >
-                  {flexRender(
-                    header.column.columnDef.header,
-                    header.getContext()
-                  )}
+      <Box sx={{ width: "100%", maxWidth: "100%", overflowX: "hidden" }}>
+        <Box
+          component="table"
+          sx={{
+            width: "100%",
+            minWidth: "100%",
+            maxWidth: 900,
+            tableLayout: "fixed",
+            borderCollapse: "collapse",
+            color: "var(--bb-sand)",
+            backgroundColor: "rgba(21, 16, 14, 0.9)",
+            border: "1px solid rgba(230, 209, 153, 0.2)",
+            fontSize: { xs: "0.7rem", sm: "0.8rem", md: "0.9rem" }
+          }}
+        >
+          <Box component="thead">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <Box component="tr" key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
                   <Box
-                    onMouseDown={header.getResizeHandler()}
-                    onTouchStart={header.getResizeHandler()}
+                    component="th"
+                    key={header.id}
                     sx={{
-                      position: "absolute",
-                      right: 0,
-                      top: 0,
-                      height: "100%",
-                      width: 6,
-                      bgcolor: "rgba(230, 209, 153, 0.6)",
-                      cursor: "col-resize",
+                      textAlign: "center",
+                      padding: { xs: "6px 6px", sm: "8px 8px", md: "10px 12px" },
+                      color: "var(--bb-gold)",
+                      borderBottom: "1px solid rgba(230, 209, 153, 0.2)",
+                      position: "relative",
+                      cursor: header.column.getCanSort() ? "pointer" : "default",
                       userSelect: "none",
-                      touchAction: "none"
+                      whiteSpace: "nowrap"
                     }}
-                  />
-                </Box>
-              ))}
-            </Box>
-          ))}
-        </Box>
-        <Box component="tbody">
-          {loading && (
-            <Box component="tr">
-              <Box component="td" colSpan={columns.length} sx={{ p: 2 }}>
-                Loading...
-              </Box>
-            </Box>
-          )}
-          {!loading && table.getRowModel().rows.length === 0 && (
-            <Box component="tr">
-              <Box component="td" colSpan={columns.length} sx={{ p: 2 }}>
-                No items found.
-              </Box>
-            </Box>
-          )}
-          {!loading &&
-            table.getRowModel().rows.map((row) => (
-              <Box component="tr" key={row.id}>
-                {row.getVisibleCells().map((cell) => {
-                  const isEditing =
-                    editingCell?.rowId === row.original.id &&
-                    editingCell?.columnId === cell.column.id;
-                  const isEditable = cell.column.columnDef.meta?.editable;
-                  const inputType = cell.column.columnDef.meta?.inputType;
-
-                  return (
+                    onClick={header.column.getToggleSortingHandler()}
+                  >
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
                     <Box
-                      component="td"
-                      key={cell.id}
+                      onMouseDown={header.getResizeHandler()}
+                      onTouchStart={header.getResizeHandler()}
                       sx={{
-                        padding: "8px 12px",
-                        borderBottom: "1px solid rgba(230, 209, 153, 0.1)",
-                        whiteSpace: "normal"
+                        position: "absolute",
+                        right: 0,
+                        top: 0,
+                        height: "100%",
+                        width: 6,
+                        bgcolor: "rgba(230, 209, 153, 0.6)",
+                        cursor: "col-resize",
+                        userSelect: "none",
+                        touchAction: "none"
                       }}
-                      onClick={() => {
-                        if (!isEditable || isEditing) {
-                          return;
-                        }
-                        startCellEdit(
-                          row.original.id,
-                          cell.column.id,
-                          cell.getValue()
-                        );
-                      }}
-                    >
-                      {isEditable && isEditing ? (
-                        inputType === "status" ? (
-                          <Select
-                            size="small"
-                            value={editingValue || "full"}
-                            onChange={(event) => {
-                              const nextValue = event.target.value;
-                              setEditingValue(nextValue);
-                              commitCellEdit(nextValue);
-                            }}
-                            sx={{ minWidth: 120 }}
-                            IconComponent={() => null}
-                            renderValue={(value) => renderStatusPill(value)}
-                          >
-                            <MenuItem value="full" sx={statusMenuItemSx("full")}>
-                              Full
-                            </MenuItem>
-                            <MenuItem value="low" sx={statusMenuItemSx("low")}>
-                              Low
-                            </MenuItem>
-                            <MenuItem value="out" sx={statusMenuItemSx("out")}>
-                              Out
-                            </MenuItem>
-                            <MenuItem
-                              value="ordered"
-                              sx={statusMenuItemSx("ordered")}
-                            >
-                              Ordered
-                            </MenuItem>
-                            <MenuItem
-                              value="request"
-                              sx={statusMenuItemSx("request")}
-                            >
-                              Request
-                            </MenuItem>
-                          </Select>
-                        ) : (
-                          <TextField
-                            size="small"
-                            value={editingValue}
-                            onChange={(event) =>
-                              setEditingValue(event.target.value)
-                            }
-                            onBlur={commitCellEdit}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter") {
-                                commitCellEdit();
-                              }
-                              if (event.key === "Escape") {
-                                cancelCellEdit();
-                              }
-                            }}
-                            inputProps={
-                              inputType === "number"
-                                ? { inputMode: "numeric", pattern: "[0-9]*" }
-                                : undefined
-                            }
-                          />
-                        )
-                      ) : (
-                        flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )
-                      )}
-                    </Box>
-                  );
-                })}
+                    />
+                  </Box>
+                ))}
               </Box>
             ))}
+          </Box>
+          <Box component="tbody">
+            {loading && (
+              <Box component="tr">
+                <Box component="td" colSpan={columns.length} sx={{ p: 2 }}>
+                  Loading...
+                </Box>
+              </Box>
+            )}
+            {!loading && table.getRowModel().rows.length === 0 && (
+              <Box component="tr">
+                <Box component="td" colSpan={columns.length} sx={{ p: 2 }}>
+                  No items found.
+                </Box>
+              </Box>
+            )}
+            {!loading &&
+              table.getRowModel().rows.map((row) => (
+                <Box component="tr" key={row.id}>
+                  {row.getVisibleCells().map((cell) => {
+                    const isEditing =
+                      editingCell?.rowId === row.original.id &&
+                      editingCell?.columnId === cell.column.id;
+                    const isEditable = cell.column.columnDef.meta?.editable;
+                    const inputType = cell.column.columnDef.meta?.inputType;
+                    const align = cell.column.columnDef.meta?.align || "left";
+
+                    return (
+                      <Box
+                        component="td"
+                        key={cell.id}
+                        sx={{
+                          padding: { xs: "6px 6px", sm: "7px 8px", md: "8px 12px" },
+                          borderBottom: "1px solid rgba(230, 209, 153, 0.1)",
+                          whiteSpace: "normal",
+                          overflowWrap: "break-word",
+                          textAlign: align,
+                          overflow: "hidden"
+                        }}
+                        onClick={() => {
+                          if (!isEditable || isEditing) {
+                            return;
+                          }
+                          startCellEdit(
+                            row.original.id,
+                            cell.column.id,
+                            cell.getValue()
+                          );
+                        }}
+                      >
+                        {isEditable && isEditing ? (
+                          inputType === "status" ? (
+                            <Select
+                              size="small"
+                              value={editingValue || "full"}
+                              onChange={(event) => {
+                                const nextValue = event.target.value;
+                                setEditingValue(nextValue);
+                                commitCellEdit(nextValue);
+                              }}
+                              sx={{ minWidth: 120 }}
+                              IconComponent={() => null}
+                              renderValue={(value) => renderStatusPill(value)}
+                            >
+                              <MenuItem value="out" sx={statusMenuItemSx("out")}>
+                                Out
+                              </MenuItem>
+                              <MenuItem value="low" sx={statusMenuItemSx("low")}>
+                                Low
+                              </MenuItem>
+                              <MenuItem
+                                value="ordered"
+                                sx={statusMenuItemSx("ordered")}
+                              >
+                                Ordered
+                              </MenuItem>
+                              <MenuItem value="full" sx={statusMenuItemSx("full")}>
+                                Full
+                              </MenuItem>
+                            </Select>
+                          ) : (
+                            <TextField
+                              size="small"
+                              value={editingValue}
+                              onChange={(event) =>
+                                setEditingValue(event.target.value)
+                              }
+                              onBlur={commitCellEdit}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter") {
+                                  commitCellEdit();
+                                }
+                                if (event.key === "Escape") {
+                                  cancelCellEdit();
+                                }
+                              }}
+                              inputProps={
+                                inputType === "number"
+                                  ? { inputMode: "numeric", pattern: "[0-9]*" }
+                                  : undefined
+                              }
+                            />
+                          )
+                        ) : (
+                          flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )
+                        )}
+                      </Box>
+                    );
+                  })}
+                </Box>
+              ))}
+          </Box>
         </Box>
       </Box>
       <Popover
@@ -664,20 +707,17 @@ export default function Products() {
               IconComponent={() => null}
               renderValue={(value) => renderStatusPill(value || "full")}
             >
-              <MenuItem value="full" sx={statusMenuItemSx("full")}>
-                Full
+              <MenuItem value="out" sx={statusMenuItemSx("out")}>
+                Out
               </MenuItem>
               <MenuItem value="low" sx={statusMenuItemSx("low")}>
                 Low
               </MenuItem>
-              <MenuItem value="out" sx={statusMenuItemSx("out")}>
-                Out
-              </MenuItem>
               <MenuItem value="ordered" sx={statusMenuItemSx("ordered")}>
                 Ordered
               </MenuItem>
-              <MenuItem value="request" sx={statusMenuItemSx("request")}>
-                Request
+              <MenuItem value="full" sx={statusMenuItemSx("full")}>
+                Full
               </MenuItem>
             </Select>
           </FormControl>
@@ -696,6 +736,24 @@ export default function Products() {
           <Button onClick={handleDialogClose}>Cancel</Button>
         </Box>
       </Popover>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={10000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity="info"
+          sx={{ width: "100%" }}
+          action={
+            <Button color="inherit" size="small" onClick={handleUndoDelete}>
+              Undo
+            </Button>
+          }
+        >
+          Item deleted.
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

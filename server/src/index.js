@@ -123,8 +123,12 @@ app.get("/health/db", async (req, res) => {
 });
 
 app.get("/api/products", async (req, res) => {
+  const scope = req.query.scope || "items";
   try {
-    const result = await queryWithRetry("SELECT * FROM products ORDER BY id");
+    const result = await queryWithRetry(
+      "SELECT * FROM products WHERE scope = $1 ORDER BY id",
+      [scope]
+    );
     res.json(result.rows);
   } catch (error) {
     console.error("Failed to load products:", error);
@@ -220,20 +224,21 @@ app.get("/api/orders", async (req, res) => {
 });
 
 app.post("/api/products", async (req, res) => {
-  const { name, category, price, stock, needed, status } = req.body || {};
+  const { name, category, price, stock, needed, status, scope } = req.body || {};
   const normalizedNeeded = needed === undefined ? 0 : needed;
   const normalizedStatus = status || "full";
+  const normalizedScope = scope || "items";
   if (!name || !category || price === undefined || stock === undefined) {
     return res.status(400).json({ error: "Missing product fields" });
   }
   try {
     const result = await queryWithRetry(
       `
-        INSERT INTO products (name, category, price, stock, needed, status)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO products (name, category, price, stock, needed, status, scope)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *
       `,
-      [name, category, price, stock, normalizedNeeded, normalizedStatus]
+      [name, category, price, stock, normalizedNeeded, normalizedStatus, normalizedScope]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -244,9 +249,10 @@ app.post("/api/products", async (req, res) => {
 
 app.put("/api/products/:id", async (req, res) => {
   const { id } = req.params;
-  const { name, category, price, stock, needed, status } = req.body || {};
+  const { name, category, price, stock, needed, status, scope } = req.body || {};
   const normalizedNeeded = needed === undefined ? 0 : needed;
   const normalizedStatus = status || "full";
+  const normalizedScope = scope || "items";
   if (!name || !category || price === undefined || stock === undefined) {
     return res.status(400).json({ error: "Missing product fields" });
   }
@@ -254,11 +260,20 @@ app.put("/api/products/:id", async (req, res) => {
     const result = await queryWithRetry(
       `
         UPDATE products
-        SET name = $1, category = $2, price = $3, stock = $4, needed = $5, status = $6
-        WHERE id = $7
+        SET name = $1, category = $2, price = $3, stock = $4, needed = $5, status = $6, scope = $7
+        WHERE id = $8
         RETURNING *
       `,
-      [name, category, price, stock, normalizedNeeded, normalizedStatus, id]
+      [
+        name,
+        category,
+        price,
+        stock,
+        normalizedNeeded,
+        normalizedStatus,
+        normalizedScope,
+        id
+      ]
     );
     if (result.rowCount === 0) {
       return res.status(404).json({ error: "Product not found" });

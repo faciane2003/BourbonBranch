@@ -10,12 +10,10 @@ import {
   ListItemText
 } from "@mui/material";
 import {
-  StarOutlined,
   AccessTimeOutlined,
   CalendarMonthOutlined,
   CallOutlined,
   DeliveryDiningOutlined,
-  DescriptionOutlined,
   EventOutlined,
   ExpandLess,
   ExpandMore,
@@ -24,14 +22,11 @@ import {
   LocalBarOutlined,
   LanguageOutlined,
   LocalOfferOutlined,
-  MonetizationOnOutlined,
   CelebrationOutlined,
-  PeopleAltOutlined,
   RestaurantMenuOutlined,
   SettingsOutlined,
   EditOutlined,
-  FitnessCenterOutlined,
-  TrendingUpOutlined
+  FitnessCenterOutlined
 } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
@@ -82,32 +77,6 @@ export default function SideBarComponent() {
     []
   );
 
-  const adminItems = useMemo(
-    () => [
-      {
-        title: "Orders",
-        component: <PeopleAltOutlined sx={{ fontSize: 16 }} color="primary" />,
-        path: "/orders"
-      },
-      {
-        title: "Revenue",
-        component: <MonetizationOnOutlined sx={{ fontSize: 16 }} color="primary" />,
-        path: "/revenue"
-      },
-      {
-        title: "Growth",
-        component: <TrendingUpOutlined sx={{ fontSize: 16 }} color="primary" />,
-        path: "/growth"
-      },
-      {
-        title: "Reports",
-        component: <DescriptionOutlined sx={{ fontSize: 16 }} color="primary" />,
-        path: "/reports"
-      }
-    ],
-    []
-  );
-
   const websiteItems = useMemo(
     () => [
       {
@@ -153,13 +122,9 @@ export default function SideBarComponent() {
   );
 
   const activeIndex = navItems.findIndex((item) => item.path === currentPage);
-  const adminActive = adminItems.some(
-    (item) => item.path === currentPage
-  );
   const websiteActive = websiteItems.some(
     (item) => !item.external && item.path === currentPage
   );
-  const [adminOpen, setAdminOpen] = useState(adminActive);
   const [websiteOpen, setWebsiteOpen] = useState(websiteActive);
 
   return (
@@ -218,92 +183,6 @@ export default function SideBarComponent() {
               </Box>
             </ListItem>
           ))}
-          <ListItem disablePadding dense={true}>
-            <Box width="100%">
-              <ListItemButton
-                onClick={() => setAdminOpen((prev) => !prev)}
-                selected={adminActive}
-                sx={{
-                  mb: 3,
-                  borderLeft: 0,
-                  borderColor: "primary.main",
-                  ml: 0,
-                  borderRadius: 4,
-                  pl: 1,
-                  py: 0,
-                  minHeight: 24,
-                  height: 24,
-                  justifyContent: "center",
-                  gap: 1
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: "auto", mr: 1 }}>
-                  <IconButton sx={{ p: 0, ml: 0 }}>
-                    <StarOutlined sx={{ fontSize: 16 }} color="primary" />
-                  </IconButton>
-                </ListItemIcon>
-                <ListItemText
-                  primary="Admin"
-                  primaryTypographyProps={{
-                    fontSize: "0.7rem",
-                    fontWeight: adminActive ? "bold" : "",
-                    color: adminActive ? "primary.main" : "inherit",
-                    textAlign: "center"
-                  }}
-                  sx={{ textAlign: "center" }}
-                />
-                {adminOpen ? <ExpandLess /> : <ExpandMore />}
-              </ListItemButton>
-            </Box>
-          </ListItem>
-          <Collapse in={adminOpen} timeout="auto" unmountOnExit>
-            <List component="div" disablePadding>
-              {adminItems.map((comp) => (
-                <ListItem disablePadding dense={true} key={comp.title}>
-                  <Box width="100%">
-                    <ListItemButton
-                      onClick={() => {
-                        navigate(comp.path);
-                      }}
-                      selected={currentPage === comp.path}
-                      sx={{
-                        mb: 1,
-                        borderLeft: 0,
-                        borderColor: "primary.main",
-                        ml: 0,
-                        borderRadius: 4,
-                        pl: 1,
-                        py: 0,
-                        minHeight: 22,
-                        height: 22,
-                        justifyContent: "center",
-                        gap: 1
-                      }}
-                    >
-                      <ListItemIcon sx={{ minWidth: "auto", mr: 1 }}>
-                        <IconButton sx={{ p: 0, ml: 0 }}>
-                          {comp.component}
-                        </IconButton>
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={comp.title}
-                        primaryTypographyProps={{
-                          fontSize: "0.6rem",
-                          fontWeight: currentPage === comp.path ? "bold" : "",
-                          color:
-                            currentPage === comp.path
-                              ? "primary.main"
-                              : "inherit",
-                          textAlign: "center"
-                        }}
-                        sx={{ textAlign: "center" }}
-                      />
-                    </ListItemButton>
-                  </Box>
-                </ListItem>
-              ))}
-            </List>
-          </Collapse>
         </List>
         <List sx={{ p: 0, m: 0, mt: 0 }}>
           <ListItem disablePadding dense={true}>

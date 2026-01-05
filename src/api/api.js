@@ -9,8 +9,9 @@ async function request(path, options) {
   return response.json();
 }
 
-export function fetchProducts() {
-  return request("/api/products");
+export function fetchProducts(scope) {
+  const query = scope ? `?scope=${encodeURIComponent(scope)}` : "";
+  return request(`/api/products${query}`);
 }
 
 export function fetchCustomers() {
