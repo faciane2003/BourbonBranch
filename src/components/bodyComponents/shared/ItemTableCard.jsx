@@ -4,14 +4,14 @@ import Products from "../inventory/Products";
 export default function ItemTableCard({ title, scope, fields }) {
   return (
     <Box>
-      <Grid container sx={{ mx: 3, p: 3 }}>
+      <Grid container sx={{ mx: 1.5, p: 1.5 }}>
         <Grid item md={12}>
           <Box
             sx={{
-              margin: 3,
+              margin: 1.5,
               bgcolor: "background.paper",
               borderRadius: 2,
-              padding: 3,
+              padding: 1.5,
               height: "100%",
               color: "var(--bb-sand)"
             }}
@@ -22,7 +22,7 @@ export default function ItemTableCard({ title, scope, fields }) {
             <Stack
               direction="row"
               spacing={2}
-              sx={{ px: 3, pb: 2, flexWrap: "wrap" }}
+              sx={{ px: 1.5, pb: 2, flexWrap: "wrap" }}
             />
             <Products scope={scope} fields={fields} />
           </Box>

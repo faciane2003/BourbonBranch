@@ -490,9 +490,9 @@ export default function Products({ scope = "items", fields = [] }) {
       if (isItemsScope) {
         return [
           {
-            header: "Edit",
+            header: "",
             id: "edit",
-            size: 120,
+            size: 100,
             minSize: 0,
             meta: { align: "center" },
             cell: ({ row }) => (
@@ -507,15 +507,20 @@ export default function Products({ scope = "items", fields = [] }) {
           {
             header: "Item",
             accessorKey: "name",
-            size: 360,
+            size: 400,
             minSize: 0,
-            meta: { editable: true, inputType: "text", align: "center" },
+            meta: {
+              editable: true,
+              inputType: "text",
+              align: "center",
+              allowWrap: true
+            },
             cell: (info) => info.getValue()
           },
           {
-            header: "Status",
+            header: "",
             accessorKey: "status",
-            size: 160,
+            size: 140,
             minSize: 0,
             meta: { editable: true, inputType: "status", align: "center" },
             cell: (info) => renderStatusPill(info.getValue() || "full")
@@ -524,23 +529,23 @@ export default function Products({ scope = "items", fields = [] }) {
             header: "Stock",
             accessorFn: (row) => Number(row.stock ?? 0),
             id: "stock",
-            size: 180,
+            size: 110,
             minSize: 0,
             meta: { editable: true, inputType: "number", align: "center" }
           },
           {
-            header: "Needed",
+            header: "Need",
             accessorFn: (row) => Number(row.needed ?? 0),
             id: "needed",
-            size: 180,
+            size: 110,
             minSize: 0,
             meta: { editable: true, inputType: "number", align: "center" },
             cell: (info) => info.getValue() ?? ""
           },
           {
-            header: "Delete",
+            header: "",
             id: "actions",
-            size: 200,
+            size: 100,
             minSize: 0,
             meta: { align: "center" },
             cell: ({ row }) => (
@@ -560,7 +565,7 @@ export default function Products({ scope = "items", fields = [] }) {
         header: field.label,
         accessorFn: (row) => row.data?.[field.key] ?? "",
         id: field.key,
-        size: 200,
+        size: 140,
         minSize: 0,
         meta: {
           editable: true,
@@ -577,9 +582,9 @@ export default function Products({ scope = "items", fields = [] }) {
       }));
 
       dynamicColumns.unshift({
-        header: "Edit",
+        header: "",
         id: "edit",
-        size: 120,
+        size: 100,
         minSize: 0,
         meta: { align: "center" },
         cell: ({ row }) => (
@@ -593,9 +598,9 @@ export default function Products({ scope = "items", fields = [] }) {
       });
 
       dynamicColumns.push({
-        header: "Delete",
+        header: "",
         id: "actions",
-        size: 160,
+        size: 100,
         minSize: 0,
         meta: { align: "center" },
         cell: ({ row }) => (
@@ -649,13 +654,17 @@ export default function Products({ scope = "items", fields = [] }) {
           }}
         >
           <Box component="colgroup">
-            {table.getVisibleLeafColumns().map((column) => (
-              <Box
-                component="col"
-                key={column.id}
-                sx={{ width: `${100 / columns.length}%` }}
-              />
-            ))}
+            {(() => {
+              const totalSize = table.getTotalSize();
+              return table.getVisibleLeafColumns().map((column) => {
+                const width = totalSize
+                  ? `${(column.getSize() / totalSize) * 100}%`
+                  : `${100 / columns.length}%`;
+                return (
+                  <Box component="col" key={column.id} sx={{ width }} />
+                );
+              });
+            })()}
           </Box>
           <Box component="thead">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -691,7 +700,7 @@ export default function Products({ scope = "items", fields = [] }) {
                         top: 0,
                         height: "100%",
                         width: 6,
-                        bgcolor: "rgba(230, 209, 153, 0.6)",
+                        bgcolor: "transparent",
                         cursor: "col-resize",
                         userSelect: "none",
                         touchAction: "none"
@@ -729,6 +738,7 @@ export default function Products({ scope = "items", fields = [] }) {
                   const selectOptions =
                     cell.column.columnDef.meta?.options || [];
                   const align = cell.column.columnDef.meta?.align || "left";
+                  const allowWrap = cell.column.columnDef.meta?.allowWrap;
 
                     return (
                       <Box
@@ -737,8 +747,8 @@ export default function Products({ scope = "items", fields = [] }) {
                         sx={{
                           padding: { xs: "6px 6px", sm: "7px 8px", md: "8px 12px" },
                           borderBottom: "1px solid rgba(230, 209, 153, 0.1)",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
+                          whiteSpace: allowWrap ? "normal" : "nowrap",
+                          overflow: allowWrap ? "visible" : "hidden",
                           textOverflow: "clip",
                           textAlign: align
                         }}
