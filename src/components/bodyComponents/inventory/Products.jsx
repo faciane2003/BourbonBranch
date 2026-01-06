@@ -9,7 +9,8 @@ import {
   Select,
   Snackbar,
   Skeleton,
-  TextField
+  TextField,
+  Typography
 } from "@mui/material";
 import { DeleteOutline, Edit } from "@mui/icons-material";
 import { useEffect, useMemo, useState } from "react";
@@ -25,7 +26,7 @@ import {
   fetchProducts,
   updateProduct
 } from "../../../api/api";
-export default function Products({ scope = "items", fields = [] }) {
+export default function Products({ scope = "items", fields = [], searchTerm = "" }) {
   const isItemsScope = scope === "items";
   const todayValue = () => new Date().toISOString().slice(0, 10);
   const timeValue = () => {
@@ -124,6 +125,20 @@ export default function Products({ scope = "items", fields = [] }) {
 
   const [formValues, setFormValues] = useState(buildFormValues());
   const [formErrors, setFormErrors] = useState({});
+  const duplicateItem = useMemo(() => {
+    if (!isItemsScope || dialogMode !== "add") {
+      return null;
+    }
+    const normalizedName = formValues.name.trim().toLowerCase();
+    if (!normalizedName) {
+      return null;
+    }
+    return (
+      rows.find(
+        (row) => String(row.name || "").trim().toLowerCase() === normalizedName
+      ) || null
+    );
+  }, [dialogMode, formValues.name, isItemsScope, rows]);
   const roundedFieldSx = {
     "& .MuiOutlinedInput-root": {
       borderRadius: "22px"
@@ -317,6 +332,23 @@ export default function Products({ scope = "items", fields = [] }) {
 
     const payload = (() => {
       if (isItemsScope) {
+        const normalizedName = formValues.name.trim().toLowerCase();
+        const duplicate = rows.find(
+          (row) => String(row.name || "").trim().toLowerCase() === normalizedName
+        );
+        if (dialogMode === "add" && duplicate) {
+          return {
+            id: duplicate.id,
+            name: duplicate.name,
+            category: duplicate.category || "General",
+            price: Number(duplicate.price || 0),
+            stock: Number(duplicate.stock || 0) + stockValue,
+            needed: Number(duplicate.needed || 0) + (neededValue ?? 0),
+            status: duplicate.status || "full",
+            scope,
+            isDuplicate: true
+          };
+        }
         return {
           name: formValues.name.trim(),
           category: formValues.category.trim() || "General",
@@ -348,8 +380,15 @@ export default function Products({ scope = "items", fields = [] }) {
 
     try {
       if (dialogMode === "add") {
-        const created = await createProduct(payload);
-        setRows((prev) => [created, ...prev]);
+        if (payload.isDuplicate) {
+          const updated = await updateProduct(payload.id, payload);
+          setRows((prev) =>
+            prev.map((row) => (row.id === updated.id ? updated : row))
+          );
+        } else {
+          const created = await createProduct(payload);
+          setRows((prev) => [created, ...prev]);
+        }
       } else {
         const updated = await updateProduct(activeProductId, payload);
         setRows((prev) =>
@@ -605,8 +644,21 @@ export default function Products({ scope = "items", fields = [] }) {
     [fields, isItemsScope]
   );
 
+  const filteredRows = useMemo(() => {
+    if (!searchTerm || !isItemsScope) {
+      return rows;
+    }
+    const normalized = searchTerm.trim().toLowerCase();
+    if (!normalized) {
+      return rows;
+    }
+    return rows.filter((row) =>
+      String(row.name || "").toLowerCase().includes(normalized)
+    );
+  }, [rows, searchTerm, isItemsScope]);
+
   const table = useReactTable({
-    data: rows,
+    data: filteredRows,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -955,6 +1007,38 @@ export default function Products({ scope = "items", fields = [] }) {
                   </MenuItem>
                 </Select>
               </FormControl>
+              {duplicateItem && (
+                <Box
+                  sx={{
+                    mt: 1,
+                    px: 1,
+                    py: 0.5,
+                    borderRadius: 2,
+                    border: "1px solid rgba(230, 209, 153, 0.25)",
+                    width: "100%",
+                    textAlign: "center"
+                  }}
+                >
+                  <Typography variant="caption" sx={{ color: "var(--bb-gold)" }}>
+                    Duplicate Exists
+                  </Typography>
+                  <Typography variant="body2">
+                    Stock: {Number(duplicateItem.stock || 0)} | Need:{" "}
+                    {Number(duplicateItem.needed || 0)}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "var(--bb-gold)" }}>
+                    Updated
+                  </Typography>
+                  <Typography variant="body2">
+                    Stock:{" "}
+                    {Number(duplicateItem.stock || 0) +
+                      Number(formValues.stock || 0)}{" "}
+                    | Need:{" "}
+                    {Number(duplicateItem.needed || 0) +
+                      Number(formValues.needed || 0)}
+                  </Typography>
+                </Box>
+              )}
             </>
           ) : (
             fields.map((field, index) =>
