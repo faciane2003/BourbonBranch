@@ -8,6 +8,7 @@ import {
   Popover,
   Select,
   Snackbar,
+  Skeleton,
   TextField
 } from "@mui/material";
 import { DeleteOutline, Edit } from "@mui/icons-material";
@@ -139,9 +140,23 @@ export default function Products({ scope = "items", fields = [] }) {
     }
   };
 
+  const fetchWithRetry = async (attempt = 0) => {
+    try {
+      return await fetchProducts(scope);
+    } catch (error) {
+      if (attempt >= 2) {
+        throw error;
+      }
+      const delayMs = 800 * (attempt + 1);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      return fetchWithRetry(attempt + 1);
+    }
+  };
+
   const loadProducts = () => {
     let isMounted = true;
-    fetchProducts(scope)
+    setLoading(true);
+    fetchWithRetry()
       .then((data) => {
         if (isMounted) {
           setRows(data);
@@ -639,6 +654,11 @@ export default function Products({ scope = "items", fields = [] }) {
       {error && (
         <Box sx={{ mb: 2, color: "var(--bb-copper)" }}>{error}</Box>
       )}
+      {loading && (
+        <Box sx={{ mb: 1, color: "var(--bb-sand)", fontSize: "0.8rem" }}>
+          Loading
+        </Box>
+      )}
       <Box sx={{ width: "100%", maxWidth: "100%", overflowX: "hidden" }}>
         <Box
           component="table"
@@ -712,13 +732,27 @@ export default function Products({ scope = "items", fields = [] }) {
             ))}
           </Box>
           <Box component="tbody">
-            {loading && (
-              <Box component="tr">
-                <Box component="td" colSpan={columns.length} sx={{ p: 2 }}>
-                  Loading...
-                </Box>
+          {loading &&
+            Array.from({ length: 3 }).map((_, rowIndex) => (
+              <Box component="tr" key={`skeleton-${rowIndex}`}>
+                {table.getVisibleLeafColumns().map((column) => (
+                  <Box
+                    component="td"
+                    key={`${column.id}-${rowIndex}`}
+                    sx={{
+                      padding: { xs: "6px 6px", sm: "7px 8px", md: "8px 12px" },
+                      borderBottom: "1px solid rgba(230, 209, 153, 0.1)"
+                    }}
+                  >
+                    <Skeleton
+                      variant="text"
+                      height={18}
+                      sx={{ bgcolor: "rgba(230, 209, 153, 0.15)" }}
+                    />
+                  </Box>
+                ))}
               </Box>
-            )}
+            ))}
             {!loading && table.getRowModel().rows.length === 0 && (
               <Box component="tr">
                 <Box component="td" colSpan={columns.length} sx={{ p: 2 }}>
