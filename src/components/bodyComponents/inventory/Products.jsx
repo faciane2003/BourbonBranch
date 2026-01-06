@@ -491,7 +491,6 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          px: 1.5,
           py: 0.25,
           borderRadius: 999,
           bgcolor: status.bg,
