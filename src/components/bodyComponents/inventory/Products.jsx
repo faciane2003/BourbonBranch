@@ -85,7 +85,6 @@ export default function Products({ scope = "items", fields = [] }) {
   const [activeProductId, setActiveProductId] = useState(null);
   const [editingCell, setEditingCell] = useState(null);
   const [editingValue, setEditingValue] = useState("");
-  const [statusTouched, setStatusTouched] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const buildFormValues = (product) => {
@@ -185,7 +184,6 @@ export default function Products({ scope = "items", fields = [] }) {
     setDialogMode("add");
     setActiveProductId(null);
     setFormValues(buildFormValues());
-    setStatusTouched(false);
     setFormErrors({});
     setAnchorEl(event?.currentTarget || null);
     setDialogOpen(true);
@@ -195,7 +193,6 @@ export default function Products({ scope = "items", fields = [] }) {
     setDialogMode("edit");
     setActiveProductId(product.id);
     setFormValues(buildFormValues(product));
-    setStatusTouched(false);
     setFormErrors({});
     setAnchorEl(event?.currentTarget || null);
     setDialogOpen(true);
@@ -208,9 +205,6 @@ export default function Products({ scope = "items", fields = [] }) {
   };
 
   const handleFieldChange = (field) => (event) => {
-    if (field === "status") {
-      setStatusTouched(true);
-    }
     setFormValues((prev) => ({ ...prev, [field]: event.target.value }));
   };
 
@@ -243,19 +237,6 @@ export default function Products({ scope = "items", fields = [] }) {
       stockValue,
       neededValue
     };
-  };
-
-  const deriveStatus = (stockValue, selectedStatus) => {
-    if (stockValue === 0) {
-      return "out";
-    }
-    if (stockValue < 2) {
-      return "low";
-    }
-    if (selectedStatus === "ordered") {
-      return "ordered";
-    }
-    return "full";
   };
 
   const startCellEdit = (rowId, columnId, value) => {
@@ -294,10 +275,6 @@ export default function Products({ scope = "items", fields = [] }) {
         updated.needed = Number(editingValue || 0);
       } else if (columnId === "status") {
         updated.status = (resolvedValue ?? editingValue) || "full";
-      }
-
-      if (columnId !== "status") {
-        updated.status = deriveStatus(Number(updated.stock || 0), updated.status);
       }
     } else {
       updated.data = { ...(updated.data || {}) };
@@ -340,19 +317,13 @@ export default function Products({ scope = "items", fields = [] }) {
 
     const payload = (() => {
       if (isItemsScope) {
-        const computedStatus =
-          dialogMode === "add"
-            ? formValues.status || "full"
-            : statusTouched
-              ? formValues.status || "full"
-              : deriveStatus(stockValue, formValues.status);
         return {
           name: formValues.name.trim(),
           category: formValues.category.trim() || "General",
           price: priceValue,
           stock: stockValue,
           needed: neededValue ?? 0,
-          status: computedStatus,
+          status: formValues.status || "full",
           scope
         };
       }
