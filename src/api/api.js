@@ -14,6 +14,10 @@ export function fetchProducts(scope) {
   return request(`/api/products${query}`);
 }
 
+export function fetchHealth() {
+  return request("/health/db");
+}
+
 export function fetchCustomers() {
   return request("/api/customers");
 }

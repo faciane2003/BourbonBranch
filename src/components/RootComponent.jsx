@@ -2,10 +2,22 @@ import NavBarComponent from "./NavBarComponent";
 import { Box, Drawer } from "@mui/material";
 import SideBarComponent from "./SideBarComponent";
 import { Outlet } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { fetchHealth } from "../api/api";
 
 export default function RootComponent() {
   const [navCollapsed, setNavCollapsed] = useState(true);
+
+  useEffect(() => {
+    const pingHealth = () => {
+      fetchHealth().catch((error) => {
+        console.warn("Health ping failed:", error);
+      });
+    };
+    pingHealth();
+    const intervalId = setInterval(pingHealth, 5 * 60 * 1000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   return (
     <>
