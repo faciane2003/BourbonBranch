@@ -94,8 +94,7 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
         name: product?.name || "",
         category: product?.category || "General",
         price: String(product?.price ?? "0"),
-        stock: String(product?.stock ?? ""),
-        status: product?.status === "active" ? "full" : product?.status || "full"
+        stock: String(product?.stock ?? "")
       };
     }
 
@@ -279,8 +278,6 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
         updated.name = String(editingValue).trim();
       } else if (columnId === "stock") {
         updated.stock = Number(editingValue || 0);
-      } else if (columnId === "status") {
-        updated.status = (resolvedValue ?? editingValue) || "full";
       }
     } else {
       updated.data = { ...(updated.data || {}) };
@@ -293,7 +290,6 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
           category: updated.category || "General",
           price: Number(updated.price || 0),
           stock: Number(updated.stock || 0),
-          status: updated.status,
           scope
         }
       : {
@@ -333,7 +329,6 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
             category: duplicate.category || "General",
             price: Number(duplicate.price || 0),
             stock: Number(duplicate.stock || 0) + stockValue,
-            status: duplicate.status || "full",
             scope,
             isDuplicate: true
           };
@@ -343,7 +338,6 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
           category: formValues.category.trim() || "General",
           price: priceValue,
           stock: stockValue,
-          status: formValues.status || "full",
           scope
         };
       }
@@ -359,7 +353,6 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
         category: "General",
         price: 0,
         stock: 0,
-        status: "full",
         scope,
         data
       };
@@ -527,14 +520,6 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
               allowWrap: true
             },
             cell: (info) => info.getValue()
-          },
-          {
-            header: "",
-            accessorKey: "status",
-            size: 140,
-            minSize: 0,
-            meta: { editable: true, inputType: "status", align: "center" },
-            cell: (info) => renderStatusPill(info.getValue() || "full")
           },
           {
             header: "Stock",
@@ -798,36 +783,7 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
                         }}
                       >
                         {isEditable && isEditing ? (
-                        inputType === "status" ? (
-                          <Select
-                              size="small"
-                              value={editingValue || "full"}
-                              onChange={(event) => {
-                                const nextValue = event.target.value;
-                                setEditingValue(nextValue);
-                                commitCellEdit(nextValue);
-                              }}
-                              sx={{ minWidth: { xs: 80, sm: 120 } }}
-                              IconComponent={() => null}
-                              renderValue={(value) => renderStatusPill(value)}
-                            >
-                              <MenuItem value="out" sx={statusMenuItemSx("out")}>
-                                Out
-                              </MenuItem>
-                              <MenuItem value="low" sx={statusMenuItemSx("low")}>
-                                Low
-                              </MenuItem>
-                              <MenuItem
-                                value="ordered"
-                                sx={statusMenuItemSx("ordered")}
-                              >
-                                Ordered
-                              </MenuItem>
-                              <MenuItem value="full" sx={statusMenuItemSx("full")}>
-                                Full
-                              </MenuItem>
-                            </Select>
-                        ) : inputType === "select" ? (
+                        inputType === "select" ? (
                           <Select
                             size="small"
                             value={editingValue || ""}
@@ -940,38 +896,6 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
                 sx={{ ...roundedFieldSx, ...centeredInputSx }}
                 size="small"
               />
-              <FormControl fullWidth size="small" sx={roundedFieldSx}>
-                <Select
-                  value={formValues.status}
-                  onChange={handleFieldChange("status")}
-                  displayEmpty
-                  inputProps={{ "aria-label": "Status" }}
-                  sx={{
-                    textAlign: "center",
-                    "& .MuiSelect-select": {
-                      overflow: "visible",
-                      textOverflow: "unset",
-                      display: "flex",
-                      justifyContent: "center"
-                    }
-                  }}
-                  IconComponent={() => null}
-                  renderValue={(value) => renderStatusPill(value || "full")}
-                >
-                  <MenuItem value="out" sx={statusMenuItemSx("out")}>
-                    Out
-                  </MenuItem>
-                  <MenuItem value="low" sx={statusMenuItemSx("low")}>
-                    Low
-                  </MenuItem>
-                  <MenuItem value="ordered" sx={statusMenuItemSx("ordered")}>
-                    Ordered
-                  </MenuItem>
-                  <MenuItem value="full" sx={statusMenuItemSx("full")}>
-                    Full
-                  </MenuItem>
-                </Select>
-              </FormControl>
               {duplicateItem && (
                 <Box
                   sx={{
