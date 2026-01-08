@@ -95,7 +95,6 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
         category: product?.category || "General",
         price: String(product?.price ?? "0"),
         stock: String(product?.stock ?? ""),
-        needed: String(product?.needed ?? ""),
         status: product?.status === "active" ? "full" : product?.status || "full"
       };
     }
@@ -232,8 +231,6 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
     const nextErrors = {};
     const priceValue = Number(formValues.price || 0);
     const stockValue = Number(formValues.stock);
-    const neededValue =
-      formValues.needed === "" ? null : Number(formValues.needed);
 
     if (!formValues.name.trim()) {
       nextErrors.name = "Item is required.";
@@ -241,16 +238,12 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
     if (formValues.stock === "" || Number.isNaN(stockValue)) {
       nextErrors.stock = "Enter a valid stock count.";
     }
-    if (neededValue !== null && Number.isNaN(neededValue)) {
-      nextErrors.needed = "Enter a valid needed count.";
-    }
 
     setFormErrors(nextErrors);
     return {
       isValid: Object.keys(nextErrors).length === 0,
       priceValue,
-      stockValue,
-      neededValue
+      stockValue
     };
   };
 
@@ -286,8 +279,6 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
         updated.name = String(editingValue).trim();
       } else if (columnId === "stock") {
         updated.stock = Number(editingValue || 0);
-      } else if (columnId === "needed") {
-        updated.needed = Number(editingValue || 0);
       } else if (columnId === "status") {
         updated.status = (resolvedValue ?? editingValue) || "full";
       }
@@ -302,7 +293,6 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
           category: updated.category || "General",
           price: Number(updated.price || 0),
           stock: Number(updated.stock || 0),
-          needed: Number(updated.needed || 0),
           status: updated.status,
           scope
         }
@@ -325,7 +315,7 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
   };
 
   const handleDialogSubmit = async () => {
-    const { isValid, priceValue, stockValue, neededValue } = validateForm();
+    const { isValid, priceValue, stockValue } = validateForm();
     if (!isValid) {
       return;
     }
@@ -343,7 +333,6 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
             category: duplicate.category || "General",
             price: Number(duplicate.price || 0),
             stock: Number(duplicate.stock || 0) + stockValue,
-            needed: Number(duplicate.needed || 0) + (neededValue ?? 0),
             status: duplicate.status || "full",
             scope,
             isDuplicate: true
@@ -354,7 +343,6 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
           category: formValues.category.trim() || "General",
           price: priceValue,
           stock: stockValue,
-          needed: neededValue ?? 0,
           status: formValues.status || "full",
           scope
         };
@@ -371,7 +359,6 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
         category: "General",
         price: 0,
         stock: 0,
-        needed: 0,
         status: "full",
         scope,
         data
@@ -556,15 +543,6 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
             size: 110,
             minSize: 0,
             meta: { editable: true, inputType: "number", align: "center" }
-          },
-          {
-            header: "Need",
-            accessorFn: (row) => Number(row.needed ?? 0),
-            id: "needed",
-            size: 110,
-            minSize: 0,
-            meta: { editable: true, inputType: "number", align: "center" },
-            cell: (info) => info.getValue() ?? ""
           },
           {
             header: "",
@@ -951,18 +929,6 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
                 size="small"
               />
               <TextField
-                placeholder="Needed"
-                type="text"
-                value={formValues.needed}
-                onChange={handleFieldChange("needed")}
-                error={Boolean(formErrors.needed)}
-                helperText={formErrors.needed}
-                inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}
-                fullWidth
-                sx={{ ...roundedFieldSx, ...centeredInputSx }}
-                size="small"
-              />
-              <TextField
                 placeholder="Current"
                 type="text"
                 value={formValues.stock}
@@ -1022,19 +988,13 @@ export default function Products({ scope = "items", fields = [], searchTerm = ""
                     Duplicate Exists
                   </Typography>
                   <Typography variant="body2">
-                    Stock: {Number(duplicateItem.stock || 0)} | Need:{" "}
-                    {Number(duplicateItem.needed || 0)}
+                    Stock: {Number(duplicateItem.stock || 0)}
                   </Typography>
                   <Typography variant="caption" sx={{ color: "var(--bb-gold)" }}>
                     Updated
                   </Typography>
                   <Typography variant="body2">
-                    Stock:{" "}
-                    {Number(duplicateItem.stock || 0) +
-                      Number(formValues.stock || 0)}{" "}
-                    | Need:{" "}
-                    {Number(duplicateItem.needed || 0) +
-                      Number(formValues.needed || 0)}
+                    Stock: {Number(duplicateItem.stock || 0) + Number(formValues.stock || 0)}
                   </Typography>
                 </Box>
               )}

@@ -224,8 +224,7 @@ app.get("/api/orders", async (req, res) => {
 });
 
 app.post("/api/products", async (req, res) => {
-  const { name, category, price, stock, needed, status, scope, data } =
-    req.body || {};
+  const { name, category, price, stock, status, scope, data } = req.body || {};
   const normalizedScope = scope || "items";
   const normalizedData = data && typeof data === "object" ? data : {};
 
@@ -233,7 +232,6 @@ app.post("/api/products", async (req, res) => {
   let normalizedCategory = category;
   let normalizedPrice = price;
   let normalizedStock = stock;
-  let normalizedNeeded = needed === undefined ? 0 : needed;
   let normalizedStatus = status || "full";
 
   if (normalizedScope === "items") {
@@ -248,16 +246,14 @@ app.post("/api/products", async (req, res) => {
     normalizedCategory = normalizedCategory || "General";
     normalizedPrice = normalizedPrice === undefined ? 0 : normalizedPrice;
     normalizedStock = normalizedStock === undefined ? 0 : normalizedStock;
-    normalizedNeeded =
-      normalizedNeeded === undefined ? 0 : normalizedNeeded;
     normalizedStatus = normalizedStatus || "full";
   }
 
   try {
     const result = await queryWithRetry(
       `
-        INSERT INTO products (name, category, price, stock, needed, status, scope, data)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        INSERT INTO products (name, category, price, stock, status, scope, data)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *
       `,
       [
@@ -265,7 +261,6 @@ app.post("/api/products", async (req, res) => {
         normalizedCategory,
         normalizedPrice,
         normalizedStock,
-        normalizedNeeded,
         normalizedStatus,
         normalizedScope,
         normalizedData
@@ -280,8 +275,7 @@ app.post("/api/products", async (req, res) => {
 
 app.put("/api/products/:id", async (req, res) => {
   const { id } = req.params;
-  const { name, category, price, stock, needed, status, scope, data } =
-    req.body || {};
+  const { name, category, price, stock, status, scope, data } = req.body || {};
   const normalizedData = data && typeof data === "object" ? data : {};
 
   try {
@@ -307,8 +301,6 @@ app.put("/api/products/:id", async (req, res) => {
     let normalizedCategory = category ?? existing?.category;
     let normalizedPrice = price ?? existing?.price;
     let normalizedStock = stock ?? existing?.stock;
-    let normalizedNeeded =
-      needed === undefined ? existing?.needed ?? 0 : needed;
     let normalizedStatus = status || existing?.status || "full";
 
     if (normalizedScope === "items") {
@@ -323,8 +315,6 @@ app.put("/api/products/:id", async (req, res) => {
       normalizedCategory = normalizedCategory || "General";
       normalizedPrice = normalizedPrice === undefined ? 0 : normalizedPrice;
       normalizedStock = normalizedStock === undefined ? 0 : normalizedStock;
-      normalizedNeeded =
-        normalizedNeeded === undefined ? 0 : normalizedNeeded;
       normalizedStatus = normalizedStatus || "full";
     }
 
@@ -335,11 +325,10 @@ app.put("/api/products/:id", async (req, res) => {
             category = $2,
             price = $3,
             stock = $4,
-            needed = $5,
-            status = $6,
-            scope = $7,
-            data = $8
-        WHERE id = $9
+            status = $5,
+            scope = $6,
+            data = $7
+        WHERE id = $8
         RETURNING *
       `,
       [
@@ -347,7 +336,6 @@ app.put("/api/products/:id", async (req, res) => {
         normalizedCategory,
         normalizedPrice,
         normalizedStock,
-        normalizedNeeded,
         normalizedStatus,
         normalizedScope,
         mergedData,
