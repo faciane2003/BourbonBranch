@@ -10,6 +10,9 @@
 - Removed Admin section and Settings from nav.
 - Added date/time formatting (dates render as `JAN 22 2026`, time renders as `7:30 PM`).
 - Added edit button on left of every row.
+- Added search bar to Items table (filters by item name).
+- Removed Status and Need columns from Items table.
+- Migrated database from `bourbon-branch-db` to free-tier `bb-db`.
 
 ## Current Challenges & Fixes
 - If inline editing throws JSON circular errors: ensure `commitCellEdit` ignores raw event objects.
